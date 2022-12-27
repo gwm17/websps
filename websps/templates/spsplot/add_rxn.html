@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block header %}
+    <h1>{% block title %}Add Reaction{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <form method="post">
+        <label for="mat_id">Target Material</label>
+        <select name="mat_id" id="mat_id" required>
+            {% for mat in target_mats %}
+                <option value="{{ mat['id'] }}">{{ mat["mat_name"] }}</option>
+            {% endfor %}
+        </select>
+        <label for="zt">ZT</label>
+        <input name="zt" value="{{ request.form['zt'] }}" required>
+        <label for="at">AT</label>
+        <input name="at" value="{{ request.form['at'] }}" required>
+        <label for="zp">ZP</label>
+        <input name="zp" value="{{ request.form['zp'] }}" required>
+        <label for="ap">AP</label>
+        <input name="ap" value="{{ request.form['ap'] }}" required>
+        <label for="ze">ZE</label>
+        <input name="ze" value="{{ request.form['ze'] }}" required>
+        <label for="ae">AE</label>
+        <input name="ae" value="{{ request.form['ae'] }}" required>
+        <input type="submit" value="Save">
+    </form>
+{% endblock %}

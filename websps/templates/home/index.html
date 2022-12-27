@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block header %}
+    {% if g.user %}
+        <a class="action" href="{{ url_for('spsplot.index') }}">SPSPlot</a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <h2>
+        Welcome to WebSPS!
+    </h2>
+    <p>
+        WebSPS is a hub for applications used with the Super-Enge Split-Pole Spectrograph at FSU. Currently, as WebSPS is brand new,
+        there is only one application, SPSPlot, which allows you to visualize what states will be present at the focal plane for a given set of reactions
+        and SPS parameters. Hopefully, WebSPS will grow over time and allow everyone to share ideas and tools! Make an account and try out the utitlities!
+    </p>
+    <h2>
+        Details
+    </h2>
+    <p>
+        WebSPS is a fullstack python web application using Flask and an SQLite database. As such it is pretty easy to modify and learn (see the Flask documentation
+        for more details on getting started). WebSPS comes with some SPS-related python classes that abstract away most of the physics needed for SPS data. WebSPS also uses
+        pycatima for energy loss calculations. If you want a desktop version of some of the tools here, look for the spspy repository, which has tools like SPSPlot and SPANC.
+    </p>
+ {% endblock %}
