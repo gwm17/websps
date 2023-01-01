@@ -1,24 +1,41 @@
 <!doctype html>
-<title> {% block title %}{% endblock %} - WebSPS</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<nav>
-    <h1>WebSPS</h1>
-    <u1>
-        {% if g.user %}
-            <li><span>{{ g.user["username"] }}</span></li>
-            <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
-        {% else %}
-            <li><a href="{{ url_for('auth.register') }}">Register</a></li>
-            <li><a href="{{ url_for('auth.login') }}">Login</a></li>
-        {% endif %}
-    </u1>
-</nav>
-<section class="content">
-    <header>
-        {% block header %}{% endblock %}
-    </header>
-    {% for message in get_flashed_messages() %}
-        <div class="flash">{{ message }}</div>
-    {% endfor %}
-    {% block content %}{% endblock %}
-</section>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='dist/output.css')}}">
+</head>
+
+<body class="text-gold bg-slate w-full">
+    <nav class="bg-garnet flex items-center justify-between m-1 rounded-md">
+        <h1 class="text-gold text-5xl font-bold p-2">WebSPS</h1>
+        <ul class="text-xl flex items-center ml-auto">
+            {% if g.user %}
+                <li class="text-gold m-2"><span>{{ g.user["username"] }}</span></li>
+                <li class="bg-gold text-garnet m-2 p-1 rounded-md shadow-md hover:text-light-garnet hover:bg-light-gold"><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+            {% else %}
+                <li class="bg-gold text-garnet m-2 p-1 rounded-md shadow-md hover:text-light-garnet hover:bg-light-gold"><a href="{{ url_for('auth.register') }}">Register</a></li>
+                <li class="bg-gold text-garnet m-2 mr-6 p-1 rounded-md shadow-md hover:text-light-garnet hover:bg-light-gold"><a href="{{ url_for('auth.login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="flex items-start">
+        <div class="basis-1/12 flex flex-col items-center rounded-md mr-1 mt-1 bg-light-slate text-gold font-bold text-lg min-h-screen">
+            <a class="text-2xl font-bold hover:text-light-gold" href="{{ url_for('home.index') }}">Home</a>
+            <a class="text-2xl font-bold hover:text-light-gold" href="{{ url_for('home.about') }}">About</a>
+            <h1 class="font-bold text-2xl underline">Utilities</h1>
+            <a class="text-xl font-bold hover:text-light-gold" href="{{ url_for('spsplot.index') }}">SPSPlot</a>
+        </div>
+        <div class="basis-11/12 flex flex-col items-center p-2 text-slate">
+            {% for message in get_flashed_messages() %}
+                <div class="flex flex-col bg-gold text-garnet rounded-md m-2 p-2 items-center">
+                    <h1 class="font-bold text-4xl">WARNING</h1>
+                    <p class="text-2xl">{{ message }}</p>
+                </div>
+            {% endfor %}
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>

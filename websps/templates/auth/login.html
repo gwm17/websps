@@ -1,15 +1,11 @@
 {% extends 'base.html' %}
 
-{% block header %}
-    <h1> {% block title %} Login {% endblock %} </h1>
-{% endblock %}
-
 {% block content %}
-    <form method="post">
-        <label for="username">Username</label>
-        <input name="username" id="username" required>
-        <label for="password">Password</label>
-        <input name="password" id="password" required>
-        <input type="submit" value="Login">
+    <form class="flex bg-gold p-4 flex-col items-center w-2/5 rounded-md" method="post">
+        <label class="text-xl font-bold" for="username">Username</label>
+        <input class="outline outline-2 outline-slate mb-2 rounded-md p-2" name="username" id="username" required>
+        <label class="text-xl font-bold" for="password">Password</label>
+        <input class="outline outline-2 outline-slate mb-4 rounded-md p-2" name="password" id="password" required>
+        <input class="text-lg font-bold bg-garnet text-gold rounded-md p-1 hover:bg-light-garnet hover:text-light-gold" type="submit" value="Login">
     </form>
 {% endblock %}

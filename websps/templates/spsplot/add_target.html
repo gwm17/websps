@@ -1,100 +1,105 @@
 {% extends "base.html" %}
 
-{% block header %}
-    <h1>{% block title %}Add Target Material{% endblock %}</h1>
-{% endblock %}
-
 {% block content %}
-    <form method="post">
-        <label for="mat_name">Target Name</label>
-        <input name="mat_name" value="{{ request.form['mat_name'] }}" required>
-        <label>Layer 1</label>
-        <div>
-            <label for="layer1_thickness">Thickness(&mu;g/cm<sup>2</sup>)</label>
-            <input name="layer1_thickness" value="{{ request.form['layer1_thickness'] }}">
-            <div class="flex-container">
-                <label for="layer1_z1">Z</label>
-                <input name="layer1_z1" value="{{ request.form['layer1_z1'] }}">
-                <label for="layer1_a1">A</label>
-                <input name="layer1_a1" value="{{ request.form['layer1_a1'] }}">
-                <label for="layer1_s1">S</label>
-                <input name="layer1_s1" value="{{ request.form['layer1_s1'] }}">
+    <h1 class="font-bold text-gold text-2xl mb-2">Add Target</h1>
+    <form class="bg-gold flex flex-col items-center justify-center rounded-md text-xl font-bold" method="post">
+        <div class="flex flex-row">
+            <label class="p-2 m-2" for="mat_name">Target Name</label>
+            <input class="p-2 m-2 rounded-md" name="mat_name" value="{{ request.form['mat_name'] }}" required>
+        </div>
+        <h1>Layer 1</h1>
+        <div class="flex flex-col items-center justify-center">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer1_thickness">Thickness(&mu;g/cm<sup>2</sup>)</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_thickness" value="{{ request.form['layer1_thickness'] }}">
             </div>
-            <div class="flex-container">
-                <label for="layer1_z2">Z</label>
-                <input name="layer1_z2" value="{{ request.form['layer1_z2'] }}">
-                <label for="layer1_a2">A</label>
-                <input name="layer1_a2" value="{{ request.form['layer1_a2'] }}">
-                <label for="layer1_s2">S</label>
-                <input name="layer1_s2" value="{{ request.form['layer1_s2'] }}">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer1_z1">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_z1" value="{{ request.form['layer1_z1'] }}">
+                <label class="p-2 m-2" for="layer1_a1">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_a1" value="{{ request.form['layer1_a1'] }}">
+                <label class="p-2 m-2" for="layer1_s1">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_s1" value="{{ request.form['layer1_s1'] }}">
             </div>
-            <div class="flex-container">
-                <label for="layer1_z3">Z</label>
-                <input name="layer1_z3" value="{{ request.form['layer1_z3'] }}">
-                <label for="layer1_a3">A</label>
-                <input name="layer1_a3" value="{{ request.form['layer1_a3'] }}">
-                <label for="layer1_s3">S</label>
-                <input name="layer1_s3" value="{{ request.form['layer1_s3'] }}">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer1_z2">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_z2" value="{{ request.form['layer1_z2'] }}">
+                <label class="p-2 m-2" for="layer1_a2">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_a2" value="{{ request.form['layer1_a2'] }}">
+                <label class="p-2 m-2" for="layer1_s2">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_s2" value="{{ request.form['layer1_s2'] }}">
+            </div>
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer1_z3">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_z3" value="{{ request.form['layer1_z3'] }}">
+                <label class="p-2 m-2" for="layer1_a3">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_a3" value="{{ request.form['layer1_a3'] }}">
+                <label class="p-2 m-2" for="layer1_s3">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer1_s3" value="{{ request.form['layer1_s3'] }}">
             </div>
         </div>
-        <label>Layer 2</label>
-        <div>
-            <label for="layer2_thickness">Thickness(&mu;g/cm<sup>2</sup>)</label>
-            <input name="layer2_thickness" value="{{ request.form['layer2_thickness'] }}">
-            <div class="flex-container">
-                <label for="layer2_z1">Z</label>
-                <input name="layer2_z1" value="{{ request.form['layer2_z1'] }}">
-                <label for="layer2_a1">A</label>
-                <input name="layer2_a1" value="{{ request.form['layer2_a1'] }}">
-                <label for="layer2_s1">S</label>
-                <input name="layer2_s1" value="{{ request.form['layer2_s1'] }}">
+        <h1>Layer 2</h1>
+        <div class="flex flex-col items-center justify-center">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer2_thickness">Thickness(&mu;g/cm<sup>2</sup>)</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_thickness" value="{{ request.form['layer2_thickness'] }}">
             </div>
-            <div class="flex-container">
-                <label for="layer2_z2">Z</label>
-                <input name="layer2_z2" value="{{ request.form['layer2_z2'] }}">
-                <label for="layer2_a2">A</label>
-                <input name="layer2_a2" value="{{ request.form['layer2_a2'] }}">
-                <label for="layer2_s2">S</label>
-                <input name="layer2_s2" value="{{ request.form['layer2_s2'] }}">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer2_z1">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_z1" value="{{ request.form['layer2_z1'] }}">
+                <label class="p-2 m-2" for="layer2_a1">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_a1" value="{{ request.form['layer2_a1'] }}">
+                <label class="p-2 m-2" for="layer2_s1">S</label>
+                <input class="p-2 m-2 rounded-md" name="layer2_s1" value="{{ request.form['layer2_s1'] }}">
             </div>
-            <div class="flex-container">
-                <label for="layer2_z3">Z</label>
-                <input name="layer2_z3" value="{{ request.form['layer2_z3'] }}">
-                <label for="layer2_a3">A</label>
-                <input name="layer2_a3" value="{{ request.form['layer2_a3'] }}">
-                <label for="layer2_s3">S</label>
-                <input name="layer2_s3" value="{{ request.form['layer2_s3'] }}">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer2_z2">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_z2" value="{{ request.form['layer2_z2'] }}">
+                <label class="p-2 m-2" for="layer2_a2">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_a2" value="{{ request.form['layer2_a2'] }}">
+                <label class="p-2 m-2" for="layer2_s2">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_s2" value="{{ request.form['layer2_a2'] }}">
             </div>
-        </div>
-        <label>Layer 3</label>
-        <div>
-            <label for="layer3_thickness">Thickness(&mu;g/cm<sup>2</sup>)</label>
-            <input name="layer3_thickness" value="{{ request.form['layer3_thickness'] }}">
-            <div class="flex-container">
-                <label for="layer3_z1">Z</label>
-                <input name="layer3_z1" value="{{ request.form['layer3_z1'] }}">
-                <label for="layer3_a1">A</label>
-                <input name="layer3_a1" value="{{ request.form['layer3_a1'] }}">
-                <label for="layer3_s1">S</label>
-                <input name="layer3_s1" value="{{ request.form['layer3_s1'] }}">
-            </div>
-            <div class="flex-container">
-                <label for="layer3_z2">Z</label>
-                <input name="layer3_z2" value="{{ request.form['layer3_z2'] }}">
-                <label for="layer3_a2">A</label>
-                <input name="layer3_a2" value="{{ request.form['layer3_a2'] }}">
-                <label for="layer3_s2">S</label>
-                <input name="layer3_s2" value="{{ request.form['layer3_s2'] }}">
-            </div>
-            <div class="flex-container">
-                <label for="layer3_z3">Z</label>
-                <input name="layer3_z3" value="{{ request.form['layer3_z3'] }}">
-                <label for="layer3_a3">A</label>
-                <input name="layer3_a3" value="{{ request.form['layer3_a3'] }}">
-                <label for="layer3_s3">S</label>
-                <input name="layer3_s3" value="{{ request.form['layer3_s3'] }}">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer2_z3">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_z3" value="{{ request.form['layer2_z3'] }}">
+                <label class="p-2 m-2" for="layer2_a3">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_a3" value="{{ request.form['layer2_a3'] }}">
+                <label class="p-2 m-2"for="layer2_s3">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer2_s3" value="{{ request.form['layer2_s3'] }}">
             </div>
         </div>
-        <input type="submit" value="Save">
+        <h1>Layer 3</h1>
+        <div class="flex flex-col items-center justify-center">
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer3_thickness">Thickness(&mu;g/cm<sup>2</sup>)</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_thickness" value="{{ request.form['layer3_thickness'] }}">
+            </div>
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer3_z1">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_z1" value="{{ request.form['layer3_z1'] }}">
+                <label class="p-2 m-2" for="layer3_a1">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_a1" value="{{ request.form['layer3_a1'] }}">
+                <label class="p-2 m-2" for="layer3_s1">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_s1" value="{{ request.form['layer3_s1'] }}">
+            </div>
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer3_z2">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_z2" value="{{ request.form['layer3_z2'] }}">
+                <label class="p-2 m-2" for="layer3_a2">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_a2" value="{{ request.form['layer3_a2'] }}">
+                <label class="p-2 m-2" for="layer3_s2">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_s2" value="{{ request.form['layer3_s2'] }}">
+            </div>
+            <div class="flex flex-row items-center justify-center">
+                <label class="p-2 m-2" for="layer3_z3">Z</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_z3" value="{{ request.form['layer3_z3'] }}">
+                <label class="p-2 m-2" for="layer3_a3">A</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_a3" value="{{ request.form['layer3_a3'] }}">
+                <label class="p-2 m-2" for="layer3_s3">S</label>
+                <input class="p-2 m-2 rounded-md" type="number" name="layer3_s3" value="{{ request.form['layer3_s3'] }}">
+            </div>
+        </div>
+        <input class="bg-garnet text-gold rounded-md hover:bg-light-garnet hover:text-light-gold shadow-md self-center col-span-2 p-2 m-2" type="submit" value="Save">
     </form>
 {% endblock %}

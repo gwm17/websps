@@ -1,8 +1,9 @@
-from .db import get_db
+from .db import db, Nucleus
 from dataclasses import dataclass
 import numpy as np
 import requests as req
 import lxml.html as xhtml
+from typing import Optional
 
 @dataclass
 class NucleusData:
@@ -12,15 +13,17 @@ class NucleusData:
     Z: int = 0
     A: int = 0
 
-def get_nuclear_data(id: np.uint32) -> NucleusData:
-    db = get_db()
-    data = db.execute("SELECT * FROM nucleus n WHERE n.id = ?", (id,)).fetchone()
-    return NucleusData(data["mass"], data["element"], data["isotope"], data["z"], data["a"])
+def get_nuclear_data(id: np.uint32) -> Optional[NucleusData]:
+    nuc: Optional[Nucleus] = db.session.get(Nucleus, id)
+    if nuc is None:
+        return None
+    return NucleusData(nuc.mass, nuc.element, nuc.isotope, nuc.z, nuc.a)
 
-def construct_catima_layer_element(id: np.uint32, s: int) -> tuple[float, int, float]:
-    db = get_db()
-    data = db.execute("SELECT * FROM nucleus n WHERE n.id = ?", (id,)).fetchone()
-    return (data["mass"], data["Z"], float(s))
+def construct_catima_layer_element(id: np.uint32, s: int) -> Optional[tuple[float, int, float]]:
+    nuc: Optional[Nucleus] = db.session.get(Nucleus, id)
+    if nuc is None:
+        return None
+    return (nuc.mass, nuc.z, float(s))
 
 def get_excitations(id: np.uint32) -> list[float]:
     levels = []

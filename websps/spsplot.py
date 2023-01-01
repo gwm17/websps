@@ -1,11 +1,13 @@
 from flask import g, Blueprint, flash, redirect, render_template, request, url_for, Response
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload, subqueryload
 from werkzeug.exceptions import abort
 from .auth import login_required
-from .db import get_db, get_nucleus_id
+from .db import db, get_nucleus_id, User, Nucleus, ReactionData, TargetMaterial
 from .NucleusData import get_excitations
 from .SPSReaction import Reaction, RxnParameters
 from .SPSTarget import SPSTarget, TargetLayer
-from typing import Union, Any
+from typing import Union, Any, Optional
 import json
 from matplotlib.figure import Figure
 from io import BytesIO
@@ -18,29 +20,25 @@ PLOT_Z: str = "Z"
 bp = Blueprint("spsplot", __name__, url_prefix="/spsplot")
 
 def generate_plot(beamEnergy: float, spsAngle: float, magneticField: float, rhoMin: float, rhoMax: float, plotType: str) -> str:
-    db = get_db()
-    data = db.execute(
-        "SELECT r.latex_rxn_symbol, r.target_nuc_id, r.projectile_nuc_id, r.ejectile_nuc_id, r.residual_nuc_id, r.excitations, t.compounds, t.thicknesses"
-        " FROM reaction r JOIN target_material t ON r.target_mat_id = t.id WHERE r.user_id=?",
-        (g.user['id'],)
-    ).fetchall()
+
+    data: User = db.session.execute(select(User).options(joinedload(User.reactions).subqueryload(ReactionData.target_material)).where(User.id == g.user.id)).scalar()
 
     rhos = []
     exs = []
     kes = []
     zs = []
     rxns = []
-    fig = Figure()
+    fig = Figure(figsize=(16,9))
     axes = fig.subplots()
-    for ir, rxn in enumerate(data):
-        targetLayers = json.loads(rxn["compounds"])
-        targetThicks = json.loads(rxn["thicknesses"])
+    for ir, rxn in enumerate(data.reactions):
+        targetLayers = json.loads(rxn.target_material.compounds)
+        targetThicks = json.loads(rxn.target_material.thicknesses)
         targetMat = SPSTarget([TargetLayer(layer, float(targetThicks[i])) for i, layer in enumerate(targetLayers) if len(layer) != 0])
         reaction = Reaction(
-            RxnParameters(rxn["target_nuc_id"], rxn["projectile_nuc_id"], rxn["ejectile_nuc_id"], rxn["residual_nuc_id"], beamEnergy, magneticField, spsAngle), 
+            RxnParameters(rxn.target_nuc_id, rxn.projectile_nuc_id, rxn.ejectile_nuc_id, rxn.residual_nuc_id, beamEnergy, magneticField, spsAngle), 
             targetMat
         )
-        excitations = json.loads(rxn["excitations"])
+        excitations = json.loads(rxn.excitations)
         for ex in excitations:
             ke = reaction.calculate_ejectile_KE(ex)
             rho = reaction.convert_ejectile_KE_2_rho(ke)
@@ -61,32 +59,25 @@ def generate_plot(beamEnergy: float, spsAngle: float, magneticField: float, rhoM
         else:
             axes.annotate(f"{exs[i]:.2f}", (x,y), textcoords="offset points", xytext=(0,10), ha="center", rotation="vertical")
 
-    ylabels = [rxn['latex_rxn_symbol'] for rxn in data]
+    ylabels = [rxn.latex_rxn_symbol for rxn in data.reactions]
     ylabels.append("Reactions")
-    axes.set_yticks(range(1,len(data)+2))
+    axes.set_yticks(range(1,len(data.reactions)+2))
     axes.set_yticklabels(ylabels)
     axes.set_xlim(rhoMin, rhoMax)
     axes.set_xlabel(r"$\rho$ (cm)")
     fig.tight_layout()
 
     buffer = BytesIO()
-    fig.savefig(buffer, format="png")
-    data = base64.b64encode(buffer.getbuffer()).decode("ascii")
+    fig.savefig(buffer, format="svg")
+    data = base64.b64encode(buffer.getbuffer()).decode("utf-8")
     return data
     
 
 @bp.route("/", methods=("GET", "POST"))
 @login_required
 def index() -> str:
-    db = get_db()
-    target_mats = db.execute(
-        "SELECT id, mat_name, mat_symbol, thicknesses FROM target_material t WHERE t.user_id = ?",
-        (g.user["id"],)
-    ).fetchall()
-    reactions = db.execute(
-        "SELECT r.id, r.rxn_symbol, t.mat_name FROM reaction r JOIN target_material t ON r.target_mat_id = t.id WHERE r.user_id = ?",
-        (g.user["id"],)
-    ).fetchall()
+
+    user: User = db.session.get(User, g.user.id)
 
     if request.method == "POST":
         beamEnergy = float(request.form["beamEnergy"])
@@ -96,66 +87,12 @@ def index() -> str:
         rhoMax = float(request.form["rhoMax"])
         plotType = request.form["plotType"]
         plot = generate_plot(beamEnergy, spsAngle, magneticField, rhoMin, rhoMax, plotType)
-        return render_template("spsplot/index.html", reactions=reactions, target_mats=target_mats, plot=plot)
-    return render_template("spsplot/index.html", reactions=reactions, target_mats=target_mats, plot=None)
+        return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, plot=plot)
+    return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, plot=None)
 
 @bp.route("/target/add", methods=("GET", "POST"))
 @login_required
 def add_target_material() -> Union[str, Response]:
-    if request.method == "POST":
-        layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
-        thicknesses: list[float] = [0., 0., 0.] #thickness of all layers
-        symbols: list[str] = [] #layer symbols
-        mat_name = request.form["mat_name"]
-        error = None
-        #Retrive data from all layers
-        db = get_db()
-        for i in range(1, 4):
-            thicknesses[i-1] = 0.0 if request.form[f"layer{i}_thickness"] == "" else (float(request.form[f"layer{i}_thickness"]))
-            symbol = ""
-            for j in range(1, 4):
-                z = request.form[f"layer{i}_z{j}"]
-                a = request.form[f"layer{i}_a{j}"]
-                s = request.form[f"layer{i}_s{j}"]
-                if z != "" and a != "" and s != "":
-                    nucleus  = db.execute("SELECT id, element, isotope FROM nucleus n WHERE n.id = ?", (get_nucleus_id(int(z), int(a)),)).fetchone()
-                    symbol += f"{nucleus['isotope']}<sub>{s}</sub>"
-                    layer_data[i-1].append((get_nucleus_id(int(z), int(a)), int(s)))
-            if symbol != "":
-                symbols.append(symbol)
-
-        if mat_name is None:
-            error = "Target material must have a name"
-
-        if error is not None:
-            flash(error)
-        else:
-            db.execute(
-                "INSERT INTO target_material (user_id, mat_name, mat_symbol, compounds, thicknesses) VALUES (?, ?, ?, ?, ?)",
-                (g.user["id"], mat_name, json.dumps(symbols), json.dumps(layer_data), json.dumps(thicknesses))
-            )
-            db.commit()
-            return redirect(url_for("spsplot.index"))
-    
-    return render_template("spsplot/add_target.html")
-
-def get_target_material(id: int, check_user: bool = True) -> Any:
-    db = get_db()
-    mat = db.execute(
-        "SELECT * FROM target_material t WHERE t.id = ?",
-        (id,)
-    ).fetchone()
-
-    if mat is None:
-        abort(404, f"Requested target material {id} does not exist")
-    if check_user and mat["user_id"] != g.user["id"]:
-        abort(403)
-    return mat
-
-@bp.route("/target/<int:id>/update", methods=("GET", "POST"))
-@login_required
-def update_target_material(id: int) -> Union[str, Response]:
-    mat = get_target_material(id)
     if request.method == "POST":
         layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
         thicknesses: list[float] = [] #thickness of all layers
@@ -163,20 +100,21 @@ def update_target_material(id: int) -> Union[str, Response]:
         mat_name = request.form["mat_name"]
         error = None
         #Retrive data from all layers
-        db = get_db()
         for i in range(1, 4):
-            thicknesses.append(request.form[f"layer{i}_thickness"])
-            symbol = ""
-            for j in range(1, 4):
-                z = request.form[f"layer{i}_z{j}"]
-                a = request.form[f"layer{i}_a{j}"]
-                s = request.form[f"layer{i}_s{j}"]
-                if z != "" and a != "" and s != "":
-                    nucleus  = db.execute("SELECT id, element, isotope FROM nucleus n WHERE n.id = ?", (get_nucleus_id(int(z), int(a)),)).fetchone()
-                    symbol += f"{nucleus['isotope']}<sub>{s}</sub>"
-                    layer_data[i].append((get_nucleus_id(int(z), int(a)), s))
-            if symbol != "":
-                symbols.append(symbol)
+            thick_str = request.form[f"layer{i}_thickness"]
+            if thick_str != "":
+                thicknesses.append(float(thick_str))
+                symbol = ""
+                for j in range(1, 4):
+                    z = request.form[f"layer{i}_z{j}"]
+                    a = request.form[f"layer{i}_a{j}"]
+                    s = request.form[f"layer{i}_s{j}"]
+                    if z != "" and a != "" and s != "":
+                        nucleus: Nucleus  = db.session.get(Nucleus, get_nucleus_id(int(z), int(a)))
+                        symbol += f"{nucleus.isotope}<sub>{s}</sub>"
+                        layer_data[i-1].append((get_nucleus_id(int(z), int(a)), int(s)))
+                if symbol != "":
+                    symbols.append(symbol)
 
         if mat_name is None:
             error = "Target material must have a name"
@@ -184,11 +122,62 @@ def update_target_material(id: int) -> Union[str, Response]:
         if error is not None:
             flash(error)
         else:
-            db.execute(
-                "UPDATE target_material SET mat_name=?, mat_symbol=?, compounds=?, thicknesses=? WHERE id=?",
-                (mat_name, json.dumps(symbols), json.dumps(layer_data), json.dumps(thicknesses), id)
-            )
-            db.commit()
+            db.session.add(TargetMaterial(user_id=g.user.id, mat_name=mat_name, mat_symbol=json.dumps(symbols), compounds=json.dumps(layer_data), thicknesses=json.dumps(thicknesses)))
+            db.session.commit()
+            return redirect(url_for("spsplot.index"))
+    
+    return render_template("spsplot/add_target.html")
+
+def get_target_material(id: int, check_user: bool = True) -> TargetMaterial:
+
+    mat: Optional[TargetMaterial] = db.session.get(TargetMaterial, id)
+
+    if mat is None:
+        abort(404, f"Requested target material {id} does not exist")
+    if check_user and mat.user_id != g.user.id:
+        abort(403)
+    return mat
+
+@bp.route("/target/<int:id>/update", methods=("GET", "POST"))
+@login_required
+def update_target_material(id: int) -> Union[str, Response]:
+    mat: Optional[TargetMaterial] = db.session.get(TargetMaterial, id)
+    if request.method == "POST":
+        layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
+        thicknesses: list[float] = [] #thickness of all layers
+        symbols: list[str] = [] #layer symbols
+        mat_name = request.form["mat_name"]
+        error = None
+        #Retrive data from all layers
+        for i in range(1, 4):
+            thick_str = request.form[f"layer{i}_thickness"]
+            if thick_str != "":
+                thicknesses.append(float(thick_str))
+                symbol = ""
+                for j in range(1, 4):
+                    z = request.form[f"layer{i}_z{j}"]
+                    a = request.form[f"layer{i}_a{j}"]
+                    s = request.form[f"layer{i}_s{j}"]
+                    if z != "" and a != "" and s != "":
+                        nucleus: Nucleus  = db.session.get(Nucleus, get_nucleus_id(int(z), int(a)))
+                        symbol += f"{nucleus['isotope']}<sub>{s}</sub>"
+                        layer_data[i].append((get_nucleus_id(int(z), int(a)), s))
+                if symbol != "":
+                    symbols.append(symbol)
+
+        if mat_name is None:
+            error = "Target material must have a name"
+        if mat is None:
+            error = "Illegal target material attempted to be modified"
+
+        if error is not None:
+            flash(error)
+        else:
+            mat.mat_name = mat_name
+            mat.mat_symbol = json.dumps(symbols)
+            mat.compounds = json.dumps(layer_data)
+            mat.thicknesses = json.dumps(thicknesses)
+            db.session.commit()
             return redirect(url_for("spsplot.index"))
     
     return render_template("spsplot/update_target.html", mat=mat)
@@ -196,16 +185,14 @@ def update_target_material(id: int) -> Union[str, Response]:
 @bp.route("/target/<int:id>/delete", methods=("GET", "POST"))
 @login_required
 def delete_target_material(id: int) -> Response:
-    get_target_material(id)
-    db = get_db()
-    db.execute("DELETE FROM target_material WHERE id = ?", (id,))
-    db.commit()
+    mat = get_target_material(id)
+    db.session.delete(mat)
+    db.session.commit()
     return redirect(url_for("spsplot.index"))
 
 @bp.route("/rxn/add", methods=("GET", "POST"))
 @login_required
 def add_rxn() -> Union[str, Response]:
-    db = get_db()
     if request.method == "POST":
         mat_id = request.form["mat_id"]
         zt = int(request.form["zt"])
@@ -226,46 +213,39 @@ def add_rxn() -> Union[str, Response]:
             ejectID = get_nucleus_id(ze, ae)
             residID = get_nucleus_id(zr, ar)
 
-            testNuc = db.execute(
-                "SELECT isotope, element, A FROM nucleus WHERE id IN (?, ?, ?, ?) ORDER BY CASE id WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 END",
-                (targID, projID, ejectID, residID, targID, projID, ejectID, residID)
-            ).fetchall()
-            if len(testNuc) != 4 or (projID == ejectID and len(testNuc) != 2):
-                error = f"Only found {testNuc} of requested nuclei"
+            targ: Optional[Nucleus] = db.session.get(Nucleus, targID)
+            proj: Optional[Nucleus] = db.session.get(Nucleus, projID)
+            eject: Optional[Nucleus] = db.session.get(Nucleus, ejectID)
+            resid: Optional[Nucleus] = db.session.get(Nucleus, residID)
+
+            if targ is None or proj is None or eject is None or resid is None:
+                error = f"One of the reactants is not a valid nucleus"
 
             if error is not None:
                 flash(error)
             else:
-                rxn_symbol = f"{testNuc[0]['isotope']}({testNuc[1]['isotope']},{testNuc[2]['isotope']}){testNuc[3]['isotope']}"
-                latex_symbol = "$^{" + str(testNuc[0]['A']) + "}$" + testNuc[0]['element'] + \
-                               "($^{" + str(testNuc[1]['A']) + "}$" + testNuc[1]['element'] + \
-                               ",$^{" + str(testNuc[2]['A']) + "}$" + testNuc[2]['element'] + \
-                               ")$^{" + str(testNuc[3]['A']) + "}$" + testNuc[3]['element']
+                rxn_symbol = f"{targ.isotope}({proj.isotope},{eject.isotope}){resid.isotope}"
+                latex_symbol = "$^{" + str(targ.a) + "}$" + targ.element + \
+                               "($^{" + str(proj.a) + "}$" + proj.element + \
+                               ",$^{" + str(eject.a) + "}$" + eject.element + \
+                               ")$^{" + str(resid.a) + "}$" + resid.element
                 excitations = json.dumps(get_excitations(residID))
-                db.execute(
-                    "INSERT INTO reaction (user_id, target_mat_id, rxn_symbol, latex_rxn_symbol, target_nuc_id, projectile_nuc_id, ejectile_nuc_id, residual_nuc_id, excitations) VALUES (?,?,?,?,?,?,?,?,?)",
-                    (g.user["id"], mat_id, rxn_symbol, latex_symbol, targID, projID, ejectID, residID, excitations)
-                )
-                db.commit()
+                db.session.add(ReactionData(user_id=g.user.id, target_mat_id=mat_id, rxn_symbol=rxn_symbol, latex_rxn_symbol=latex_symbol,
+                                            target_nuc_id=targID, projectile_nuc_id=projID, ejectile_nuc_id=ejectID, residual_nuc_id=residID, excitations=excitations))
+                db.session.commit()
                 return redirect(url_for("spsplot.index"))
     
-    target_mats = db.execute(
-        "SELECT * FROM target_material t WHERE t.user_id = ?",
-        (g.user["id"],)
-    ).fetchall()
+    user: User = db.session.get(User, g.user.id)
 
-    return render_template("spsplot/add_rxn.html", target_mats=target_mats)
+    return render_template("spsplot/add_rxn.html", target_mats=user.target_materials)
 
-def get_rxn(id: int, check_user: bool = True) -> Any:
-    db = get_db()
-    rxn = db.execute(
-        "SELECT * FROM reaction r WHERE r.id = ?",
-        (id,)
-    ).fetchone()
+def get_rxn(id: int, check_user: bool = True) -> ReactionData:
+
+    rxn: Optional[ReactionData] = db.session.get(ReactionData, id)
 
     if rxn is None:
         abort(404, f"Requested reaction {id} does not exist")
-    if check_user and rxn["user_id"] != g.user["id"]:
+    if check_user and rxn.user_id != g.user.id:
         abort(403)
     return rxn
 
@@ -278,8 +258,7 @@ def update_rxn(id: int) -> str:
 @bp.route("/rxn/<int:id>/delete", methods=("GET", "POST"))
 @login_required
 def delete_rxn(id: int) -> Response:
-    get_rxn(id)
-    db = get_db()
-    db.execute("DELETE FROM reaction WHERE id = ?", (id,))
-    db.commit()
+    rxn = get_rxn(id)
+    db.session.delete(rxn)
+    db.session.commit()
     return redirect(url_for("spsplot.index"))

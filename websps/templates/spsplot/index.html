@@ -1,86 +1,87 @@
 {% extends "base.html" %}
 
-{% block header %}
-    <h1> {% block title %} SPSPlot {% endblock %} </h1>
-    {% if g.user %}
-        <a class="action" href="{{ url_for('spsplot.add_target_material') }}">Add Target Material</a>
-        <a class="action" href="{{ url_for('spsplot.add_rxn') }}">Add Reaction</a>
-    {% endif %}
-{% endblock %}
-
 {% block content %}
-    <label>User Data</label>
-    <div class="flex-container">
-        <table name="targ_table" id="targ_table">
-            <caption>Target Materials</caption>
-            <tr>
-                <th>Name</th>
-                <th>Layer Symbols</th>
-                <th>Layer Thicknesses(&mu;g/cm<sup>2</sup>)</th>
-            </tr>
-        {% for mat in target_mats %}
-            <tr>
-                <td><a class="action" href="{{ url_for('spsplot.update_target_material', id=mat['id']) }}">{{ mat["mat_name"] }}</a></td>
-                <td>{{ mat["mat_symbol"].replace('"','') | safe }}</td>
-                <td>{{ mat["thicknesses"].replace('"','') }}</td>
-            </tr>
-        {% endfor %}
-        </table>
-        <table name="rxn_table" id="rxn_table">
-            <caption>Target Materials</caption>
-            <tr>
-                <th>Reaction</th>
-                <th>Target Material</th>
-            </tr>
-        {% for rxn in reactions %}
-            <tr>
-                <td><a class="action" href="{{ url_for('spsplot.update_rxn', id=rxn['id']) }}">{{ rxn["rxn_symbol"] | safe }}</a></td>
-                <td>{{ rxn["mat_name"] }}</td>
-            </tr>
-        {% endfor %}
-        </table>
+
+    <!-- Menu bar for SPSPlot -->
+    <ul class="flex flex-row items-center justify-center bg-light-slate text-garnet font-bold rounded-md p-2 w-full">
+        <li class="bg-gold rounded-md shadow-md m-2 p-2 hover:text-light-garnet hover:bg-light-gold"><a class="action" href="{{ url_for('spsplot.add_target_material') }}">Add Target Material</a></li>
+        <li class="bg-gold rounded-md shadow-md m-2 p-2 hover:text-light-garnet hover:bg-light-gold"><a class="action" href="{{ url_for('spsplot.add_rxn') }}">Add Reaction</a></li>
+    </ul>
+
+    <h1 class="self-center text-4xl font-bold m-2 underline text-gold">Settings</h1>
+    <div class="self-center grid grid-cols-1 justify-items-center items-center p-2 bg-garnet w-fit rounded-md m-4 text-gold">
+        <div class="bg-garnet w-fit rounded-md flex text-2xl m-4">
+            <table class="table-auto border-collapse text-xl border-neutral border-4  mr-4" name="targ_table" id="targ_table">
+                <caption class="font-bold text-2xl mb-2">Target Materials</caption>
+                <tr>
+                    <th class="border-neutral text-xl border-2 p-2">Name</th>
+                    <th class="border-neutral text-xl border-2 p-2">Layer Symbols</th>
+                    <th class="border-neutral text-xl border-2 p-2">Layer Thicknesses(&mu;g/cm<sup>2</sup>)</th>
+                </tr>
+            {% for mat in target_mats %}
+                <tr>
+                    <td class="border-neutral border-2 p-2 hover:text-light-gold"><a class="action" href="{{ url_for('spsplot.update_target_material', id=mat['id']) }}">{{ mat.mat_name }}</a></td>
+                    <td class="border-neutral text-xl border-2 p-2">{{ mat.mat_symbol.replace('"','') | safe }}</td>
+                    <td class="border-neutral border-2 p-2">{{ mat.thicknesses }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+            <table class="table-auto border-collapse border-neutral border-4 m-2" name="rxn_table" id="rxn_table">
+                <caption class="font-bold mb-2">Reactions</caption>
+                <tr>
+                    <th class="border-neutral border-2 p-2">Reaction</th>
+                    <th class="border-neutral border-2 p-2">Target Material</th>
+                </tr>
+            {% for rxn in reactions %}
+                <tr>
+                    <td class="border-neutral border-2 p-2 hover:text-light-gold"><a class="action" href="{{ url_for('spsplot.update_rxn', id=rxn['id']) }}">{{ rxn.rxn_symbol | safe }}</a></td>
+                    <td class="border-neutral border-2 p-2">{{ rxn.target_material.mat_name }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+        </div>
+        <form class="flex flex-col text-xl bg-garnet w-fit rounded-md m-4 p-2 text-gold" method="post">
+            <fieldset class="border-neutral border-2 grid grid-cols-6 mb-2">
+                <legend class="font-bold p-2">Plot Settings</legend>
+                <label class="m-2" for="beamEnergy">Beam Energy (MeV)</label>
+                <input class="text-slate m-2 rounded-md px-2" type="number" name="beamEnergy" size="10" value="{{ request.form['beamEnergy'] }}" required>
+                <label class="m-2" for="spsAngle">SPS Angle (deg)</label>
+                <input class="text-slate m-2 rounded-md px-2" type="number" name="spsAngle" size="10" value="{{ request.form['spsAngle'] }}" required>
+                <label class="m-2" for="bfield">SPS B-Field (kG)</label>
+                <input class="text-slate m-2 rounded-md px-2" type="number" name="bfield" size="10" value="{{ request.form['bfield'] }}" required>
+                <label class="m-2" for="rhoMin">&rho; Min (cm)</label>
+                <input class="text-slate m-2 rounded-md px-2" type="number" name="rhoMin" size="10" value="{{ request.form['rhoMin'] }}" required>
+                <label class="m-2" for="rhoMax">&rho; Max (cm)</label>
+                <input class="text-slate m-2 rounded-md px-2" type="number" name="rhoMax" size="10" value="{{ request.form['rhoMax'] }}" required>
+            </fieldset>
+            <fieldset class="border-neutral border-2 grid grid-cols-6 mb-2">
+                <legend class="font-bold">Plot Tags</legend>
+                <label class="m-2" for="exButton">Show Excitation (MeV)</label>
+                {% if request.form["plotType"] == "E" %}
+                    <input class="accent-gold m-2" type="radio" name="plotType" id="exButton" value="E" checked="checked">
+                {% else %}
+                    <input class="accent-gold m-2" type="radio" name="plotType" id="exButton" value="E">
+                {% endif %}
+                <label class="m-2" for="keButton">Show Ejectile KE (MeV)</label>
+                {% if request.form["plotType"] == "K" %}
+                    <input class="accent-gold m-2" type="radio" name="plotType" id="keButton" value="K" checked="checked">
+                {% else %}
+                    <input class="accent-gold m-2" type="radio" name="plotType" id="keButton" value="K">
+                {% endif %}
+                <label class="m-2" for="zButton">Show ZOffset (cm)</label>
+                {% if request.form["plotType"] == "Z" %}
+                    <input class="accent-gold m-2" type="radio" name="plotType" id="zButton" value="Z" checked="checked">
+                {% else %}
+                    <input class="accent-gold m-2" type="radio" class="button-garnet" name="plotType" id="zButton" value="Z">
+                {% endif %}
+            </fieldset>
+            <input class="bg-gold text-garnet self-center justify-center font-bold text-2xl rounded-md shadow-md hover:bg-light-gold hover:text-light-garnet m-4 p-2" type="submit" value="Plot">
+        </form>
     </div>
-    <form method="post">
-        <fieldset>
-            <legend>Plot Settings</legend>
-            <label for="beamEnergy">Beam Energy (MeV)</label>
-            <input class="inline-input" name="beamEnergy" size="10" value="{{ request.form['beamEnergy'] }}" required>
-            <label for="spsAngle">SPS Angle (deg)</label>
-            <input class="inline-input" name="spsAngle" size="10" value="{{ request.form['spsAngle'] }}" required>
-            <label for="bfield">SPS B-Field (kG)</label>
-            <input class="inline-input" name="bfield" size="10" value="{{ request.form['bfield'] }}" required>
-            <br>
-            <label for="rhoMin">&rho; Min (cm)</label>
-            <input class="inline-input" name="rhoMin" size="10" value="{{ request.form['rhoMin'] }}" required>
-            <label for="rhoMax">&rho; Max (cm)</label>
-            <input class="inline-input" name="rhoMax" size="10" value="{{ request.form['rhoMax'] }}" required>
-        </fieldset>
-        <fieldset>
-            <legend>Plot Tags</legend>
-            <label for="exButton">Show Excitation (MeV)</label>
-            {% if request.form["plotType"] == "E" %}
-                <input type="radio" name="plotType" id="exButton" value="E" checked="checked">
-            {% else %}
-                <input type="radio" name="plotType" id="exButton" value="E">
-            {% endif %}
-            <label for="keButton">Show Ejectile KE (MeV)</label>
-            {% if request.form["plotType"] == "K" %}
-                <input type="radio" name="plotType" id="keButton" value="K" checked="checked">
-            {% else %}
-                <input type="radio" name="plotType" id="keButton" value="K">
-            {% endif %}
-            <label for="zButton">Show ZOffset (cm)</label>
-            {% if request.form["plotType"] == "Z" %}
-                <input type="radio" name="plotType" id="zButton" value="Z" checked="checked">
-            {% else %}
-                <input type="radio" name="plotType" id="zButton" value="Z">
-            {% endif %}
-        </fieldset>
-        <input type="submit" value="Plot">
-    </form>
-    <div>
+    <h1 class="self-center text-4xl font-bold m-2 underline text-gold">Result</h1>
+    <div class="flex justify-center w-5/6 m-4 self-center rounded-md bg-garnet">
         {% if plot %}
-            <img src='data:image/png;base64,{{ plot }}'/>
+            <img class="object-scale-down p-2" src= 'data:image/svg+xml;base64,{{ plot }}'/>
         {% endif %}
     </div>
  {% endblock %}

@@ -1,18 +1,19 @@
 import os
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 from typing import Mapping, Any, Optional
 from . import db
 from . import auth
-#from . import blog
 from . import home
 from . import spsplot
+from pathlib import Path
 
 def create_app(test_config: Optional[Mapping[str, Any]]=None) -> Flask:
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'websps.sqlite'),
+        SQLALCHEMY_DATABASE_URI=f"sqlite+pysqlite:///{Path(app.instance_path) / 'websps.sqlite'}",
     )
 
     if test_config is None:
@@ -28,17 +29,11 @@ def create_app(test_config: Optional[Mapping[str, Any]]=None) -> Flask:
     except OSError:
         pass
 
-    # a simple page that says hello
-    @app.route('/hello')
-    def hello():
-        return 'Hello, World!'
-
     # initialize database with app
-    db.init_app(app)
+    db.db.init_app(app)
 
     app.register_blueprint(home.bp)
     app.register_blueprint(auth.bp)
-    #app.register_blueprint(blog.bp)
     app.register_blueprint(spsplot.bp)
 
     return app

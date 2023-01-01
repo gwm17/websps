@@ -1,29 +1,26 @@
 {% extends "base.html" %}
 
-{% block header %}
-    <h1>{% block title %}Add Reaction{% endblock %}</h1>
-{% endblock %}
-
 {% block content %}
-    <form method="post">
-        <label for="mat_id">Target Material</label>
-        <select name="mat_id" id="mat_id" required>
+    <h1 class="font-bold text-gold text-2xl mb-2">Add Reaction</h1>
+    <form class="bg-gold grid grid-cols-[fit-content] items-center justify-items-center rounded-md text-xl font-bold" method="post">
+        <label class="w-fit m-2" for="mat_id">Target Material</label>
+        <select class="p-2 m-1 rounded-md" name="mat_id" id="mat_id" required>
             {% for mat in target_mats %}
-                <option value="{{ mat['id'] }}">{{ mat["mat_name"] }}</option>
+                <option value="{{ mat.id }}">{{ mat.mat_name }}</option>
             {% endfor %}
         </select>
         <label for="zt">ZT</label>
-        <input name="zt" value="{{ request.form['zt'] }}" required>
+        <input class="p-2 m-1 rounded-md px-2" type="number" name="zt" value="{{ request.form['zt'] }}" required>
         <label for="at">AT</label>
-        <input name="at" value="{{ request.form['at'] }}" required>
+        <input class="p-2 m-1 rounded-md px-2" type="number" name="at" value="{{ request.form['at'] }}" required>
         <label for="zp">ZP</label>
-        <input name="zp" value="{{ request.form['zp'] }}" required>
+        <input class="p-2 m-1 rounded-md px-2" type="number" name="zp" value="{{ request.form['zp'] }}" required>
         <label for="ap">AP</label>
-        <input name="ap" value="{{ request.form['ap'] }}" required>
+        <input class="p-2 m-1 rounded-md px-2" type="number" name="ap" value="{{ request.form['ap'] }}" required>
         <label for="ze">ZE</label>
-        <input name="ze" value="{{ request.form['ze'] }}" required>
+        <input class="p-2 m-1 rounded-md px-2" type="number" name="ze" value="{{ request.form['ze'] }}" required>
         <label for="ae">AE</label>
-        <input name="ae" value="{{ request.form['ae'] }}" required>
-        <input type="submit" value="Save">
+        <input class="p-2 m-1 rounded-md px-2" type="number" name="ae" value="{{ request.form['ae'] }}" required>
+        <input class="bg-garnet text-gold rounded-md hover:bg-light-garnet hover:text-light-gold shadow-md self-center col-span-2 p-2 m-2" type="submit" value="Save">
     </form>
 {% endblock %}

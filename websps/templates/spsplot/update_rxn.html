@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 
-{% block header %}
-    <h1>{% block title %}Delete Reaction{% endblock %}</h1>
-{% endblock %}
-
 {% block content %}
-    <form action="{{ url_for('spsplot.delete_rxn', id=rxn['id']) }}" method="post">
-        <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+    <form action="{{ url_for('spsplot.delete_rxn', id=rxn.id) }}" method="post">
+        <input class="bg-garnet text-gold rounded-md p-2 text-xl m-2 font-bold hover:bg-light-garnet hover:text-light-gold shadow-md self-center" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
     </form>
 {% endblock %}
