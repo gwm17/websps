@@ -2,16 +2,19 @@ from flask import g, Blueprint, flash, redirect, render_template, request, url_f
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, subqueryload
 from werkzeug.exceptions import abort
-from .auth import login_required
-from .db import db, get_nucleus_id, User, Nucleus, ReactionData, TargetMaterial
-from .NucleusData import get_excitations
-from .SPSReaction import Reaction, RxnParameters
-from .SPSTarget import SPSTarget, TargetLayer
+
 from typing import Union, Any, Optional
 import json
 from matplotlib.figure import Figure
 from io import BytesIO
 import base64
+
+from .auth import login_required
+from .db import db, get_nucleus_id, User, Nucleus, ReactionData, TargetMaterial
+from .NucleusData import get_excitations
+from .SPSReaction import Reaction, RxnParameters
+from .SPSTarget import SPSTarget, TargetLayer
+from .forms import PlotForm, ReactionForm, TargetForm
 
 PLOT_EX: str = "E"
 PLOT_KE: str = "K"
@@ -78,55 +81,48 @@ def generate_plot(beamEnergy: float, spsAngle: float, magneticField: float, rhoM
 def index() -> str:
 
     user: User = db.session.get(User, g.user.id)
+    form = PlotForm()
 
-    if request.method == "POST":
-        beamEnergy = float(request.form["beamEnergy"])
-        spsAngle = float(request.form["spsAngle"])
-        magneticField = float(request.form["bfield"])
-        rhoMin = float(request.form["rhoMin"])
-        rhoMax = float(request.form["rhoMax"])
-        plotType = request.form["plotType"]
-        plot = generate_plot(beamEnergy, spsAngle, magneticField, rhoMin, rhoMax, plotType)
-        return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, plot=plot)
-    return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, plot=None)
+    if form.validate_on_submit():
+        return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, form=form,
+            plot = generate_plot(float(form.beam_energy.data), float(form.sps_angle.data), float(form.b_field.data), float(form.rho_min.data), float(form.rho_max.data), form.buttons.data)
+        )
+    return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, form=form, plot=None)
 
 @bp.route("/target/add", methods=("GET", "POST"))
 @login_required
 def add_target_material() -> Union[str, Response]:
-    if request.method == "POST":
+    form = TargetForm()
+    if form.validate_on_submit():
         layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
         thicknesses: list[float] = [] #thickness of all layers
         symbols: list[str] = [] #layer symbols
-        mat_name = request.form["mat_name"]
         error = None
-        #Retrive data from all layers
-        for i in range(1, 4):
-            thick_str = request.form[f"layer{i}_thickness"]
-            if thick_str != "":
-                thicknesses.append(float(thick_str))
+
+        for i, layer in enumerate(form.layers):
+            if layer.thickness.data is not None:
+                thicknesses.append(float(layer.thickness.data))
                 symbol = ""
-                for j in range(1, 4):
-                    z = request.form[f"layer{i}_z{j}"]
-                    a = request.form[f"layer{i}_a{j}"]
-                    s = request.form[f"layer{i}_s{j}"]
-                    if z != "" and a != "" and s != "":
-                        nucleus: Nucleus  = db.session.get(Nucleus, get_nucleus_id(int(z), int(a)))
-                        symbol += f"{nucleus.isotope}<sub>{s}</sub>"
-                        layer_data[i-1].append((get_nucleus_id(int(z), int(a)), int(s)))
+                for element in layer.elements:
+                    if element.z.data is not None and element.a.data is not None and element.s.data is not None:
+                        nuc_id = get_nucleus_id(element.z.data, element.a.data)
+                        nuc: Nucleus = db.session.get(Nucleus, nuc_id)
+                        symbol += f"{nuc.isotope}<sub>{element.s.data}</sub>"
+                        layer_data[i].append((nuc_id, element.s.data))
                 if symbol != "":
                     symbols.append(symbol)
 
-        if mat_name is None:
-            error = "Target material must have a name"
+        if len(thicknesses) == 0:
+            error = "A target must have at least one layer"
 
         if error is not None:
             flash(error)
         else:
-            db.session.add(TargetMaterial(user_id=g.user.id, mat_name=mat_name, mat_symbol=json.dumps(symbols), compounds=json.dumps(layer_data), thicknesses=json.dumps(thicknesses)))
+            db.session.add(TargetMaterial(user_id=g.user.id, mat_name=form.mat_name.data, mat_symbol=json.dumps(symbols), compounds=json.dumps(layer_data), thicknesses=json.dumps(thicknesses)))
             db.session.commit()
             return redirect(url_for("spsplot.index"))
     
-    return render_template("spsplot/add_target.html")
+    return render_template("spsplot/add_target.html", form=form)
 
 def get_target_material(id: int, check_user: bool = True) -> TargetMaterial:
 
@@ -141,46 +137,41 @@ def get_target_material(id: int, check_user: bool = True) -> TargetMaterial:
 @bp.route("/target/<int:id>/update", methods=("GET", "POST"))
 @login_required
 def update_target_material(id: int) -> Union[str, Response]:
-    mat: Optional[TargetMaterial] = db.session.get(TargetMaterial, id)
-    if request.method == "POST":
+    mat = get_target_material(id)
+    form = TargetForm()
+    if form.validate_on_submit():
         layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
         thicknesses: list[float] = [] #thickness of all layers
         symbols: list[str] = [] #layer symbols
-        mat_name = request.form["mat_name"]
         error = None
-        #Retrive data from all layers
-        for i in range(1, 4):
-            thick_str = request.form[f"layer{i}_thickness"]
-            if thick_str != "":
-                thicknesses.append(float(thick_str))
+
+        for i, layer in enumerate(form.layers):
+            if layer.thickness.data is not None:
+                thicknesses.append(layer.thickness.data)
                 symbol = ""
-                for j in range(1, 4):
-                    z = request.form[f"layer{i}_z{j}"]
-                    a = request.form[f"layer{i}_a{j}"]
-                    s = request.form[f"layer{i}_s{j}"]
-                    if z != "" and a != "" and s != "":
-                        nucleus: Nucleus  = db.session.get(Nucleus, get_nucleus_id(int(z), int(a)))
-                        symbol += f"{nucleus['isotope']}<sub>{s}</sub>"
-                        layer_data[i].append((get_nucleus_id(int(z), int(a)), s))
+                for element in layer.elements:
+                    if element.z.data is not None and element.a.data is not None and element.s.data is not None:
+                        nuc_id = get_nucleus_id(element.z.data, element.a.data)
+                        nuc: Optional[Nucleus] = db.session.get(Nucleus, nuc_id)
+                        if nuc is None:
+                            error = f"Illegal nucleus Z={element.z.data} A={element.a.data}"
+                        else:
+                            symbol += f"{nuc.isotope}<sub>{element.s.data}</sub>"
+                            layer_data[i].append(nuc_id, element.s.data)
                 if symbol != "":
                     symbols.append(symbol)
 
-        if mat_name is None:
-            error = "Target material must have a name"
-        if mat is None:
-            error = "Illegal target material attempted to be modified"
+        if len(thicknesses) == 0:
+            error = "A target must have at least one layer"
 
         if error is not None:
             flash(error)
         else:
-            mat.mat_name = mat_name
-            mat.mat_symbol = json.dumps(symbols)
-            mat.compounds = json.dumps(layer_data)
-            mat.thicknesses = json.dumps(thicknesses)
+            db.session.add(TargetMaterial(user_id=g.user.id, mat_name=form.mat_name.data, mat_symbol=json.dumps(symbols), compounds=json.dumps(layer_data), thicknesses=json.dumps(thicknesses)))
             db.session.commit()
             return redirect(url_for("spsplot.index"))
     
-    return render_template("spsplot/update_target.html", mat=mat)
+    return render_template("spsplot/update_target.html", mat=mat, form=form)
 
 @bp.route("/target/<int:id>/delete", methods=("GET", "POST"))
 @login_required
@@ -193,30 +184,26 @@ def delete_target_material(id: int) -> Response:
 @bp.route("/rxn/add", methods=("GET", "POST"))
 @login_required
 def add_rxn() -> Union[str, Response]:
-    if request.method == "POST":
-        mat_id = request.form["mat_id"]
-        zt = int(request.form["zt"])
-        at = int(request.form["at"])
-        zp = int(request.form["zp"])
-        ap = int(request.form["ap"])
-        ze = int(request.form["ze"])
-        ae = int(request.form["ae"])
+    form = ReactionForm()
+    user: User = db.session.get(User, g.user.id)
+    form.target_mat.choices = [(mat.id, mat.mat_name) for mat in user.target_materials]
+
+    if form.validate_on_submit():
         error = None
-
-        zr = zt + zp - ze
-        ar = at + ap - ae
+        zr = form.zt.data + form.zp.data - form.ze.data
+        ar = form.at.data + form.ap.data - form.ae.data
         if zr < 0 or ar < 1:
-            error = f"Illegal residual nucleus with Z:{zr} A:{ar}"
+            error = f"Illegal reaction resulting in residual with Z:{zr} A:{ar}"
         else:
-            targID = get_nucleus_id(zt, at)
-            projID = get_nucleus_id(zp, ap)
-            ejectID = get_nucleus_id(ze, ae)
-            residID = get_nucleus_id(zr, ar)
+            targ_id = get_nucleus_id(form.zt.data, form.at.data)
+            proj_id = get_nucleus_id(form.zp.data, form.ap.data)
+            eject_id = get_nucleus_id(form.ze.data, form.ae.data)
+            resid_id = get_nucleus_id(zr, ar)
 
-            targ: Optional[Nucleus] = db.session.get(Nucleus, targID)
-            proj: Optional[Nucleus] = db.session.get(Nucleus, projID)
-            eject: Optional[Nucleus] = db.session.get(Nucleus, ejectID)
-            resid: Optional[Nucleus] = db.session.get(Nucleus, residID)
+            targ: Optional[Nucleus] = db.session.get(Nucleus, targ_id)
+            proj: Optional[Nucleus] = db.session.get(Nucleus, proj_id)
+            eject: Optional[Nucleus] = db.session.get(Nucleus, eject_id)
+            resid: Optional[Nucleus] = db.session.get(Nucleus, resid_id)
 
             if targ is None or proj is None or eject is None or resid is None:
                 error = f"One of the reactants is not a valid nucleus"
@@ -229,15 +216,12 @@ def add_rxn() -> Union[str, Response]:
                                "($^{" + str(proj.a) + "}$" + proj.element + \
                                ",$^{" + str(eject.a) + "}$" + eject.element + \
                                ")$^{" + str(resid.a) + "}$" + resid.element
-                excitations = json.dumps(get_excitations(residID))
-                db.session.add(ReactionData(user_id=g.user.id, target_mat_id=mat_id, rxn_symbol=rxn_symbol, latex_rxn_symbol=latex_symbol,
-                                            target_nuc_id=targID, projectile_nuc_id=projID, ejectile_nuc_id=ejectID, residual_nuc_id=residID, excitations=excitations))
+                excitations = json.dumps(get_excitations(resid_id))
+                db.session.add(ReactionData(user_id=g.user.id, target_mat_id=form.target_mat.data, rxn_symbol=rxn_symbol, latex_rxn_symbol=latex_symbol,
+                                            target_nuc_id=targ_id, projectile_nuc_id=proj_id, ejectile_nuc_id=eject_id, residual_nuc_id=resid_id, excitations=excitations))
                 db.session.commit()
                 return redirect(url_for("spsplot.index"))
-    
-    user: User = db.session.get(User, g.user.id)
-
-    return render_template("spsplot/add_rxn.html", target_mats=user.target_materials)
+    return render_template("spsplot/add_rxn.html", form=form)
 
 def get_rxn(id: int, check_user: bool = True) -> ReactionData:
 

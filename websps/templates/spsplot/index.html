@@ -40,41 +40,28 @@
             {% endfor %}
             </table>
         </div>
-        <form class="flex flex-col text-xl bg-garnet w-fit rounded-md m-4 p-2 text-gold" method="post">
-            <fieldset class="border-neutral border-2 grid grid-cols-6 mb-2">
+        <form class="flex flex-col text-2xl bg-garnet w-fit rounded-md m-4 p-2 text-gold" method="post">
+            {{ form.csrf_token }}
+            <fieldset class="border-neutral border-2 items-center justify-items-center grid grid-cols-6 mb-2">
                 <legend class="font-bold p-2">Plot Settings</legend>
-                <label class="m-2" for="beamEnergy">Beam Energy (MeV)</label>
-                <input class="text-slate m-2 rounded-md px-2" type="number" name="beamEnergy" size="10" value="{{ request.form['beamEnergy'] }}" required>
-                <label class="m-2" for="spsAngle">SPS Angle (deg)</label>
-                <input class="text-slate m-2 rounded-md px-2" type="number" name="spsAngle" size="10" value="{{ request.form['spsAngle'] }}" required>
-                <label class="m-2" for="bfield">SPS B-Field (kG)</label>
-                <input class="text-slate m-2 rounded-md px-2" type="number" name="bfield" size="10" value="{{ request.form['bfield'] }}" required>
-                <label class="m-2" for="rhoMin">&rho; Min (cm)</label>
-                <input class="text-slate m-2 rounded-md px-2" type="number" name="rhoMin" size="10" value="{{ request.form['rhoMin'] }}" required>
-                <label class="m-2" for="rhoMax">&rho; Max (cm)</label>
-                <input class="text-slate m-2 rounded-md px-2" type="number" name="rhoMax" size="10" value="{{ request.form['rhoMax'] }}" required>
+                {{ form.beam_energy.label }}
+                {{ with_errors(form.beam_energy, class="text-slate m-2 px-2 rounded-md") }}
+                {{ form.sps_angle.label }}
+                {{ with_errors(form.sps_angle, class="text-slate m-2 px-2 rounded-md") }}
+                {{ form.b_field.label }}
+                {{ with_errors(form.b_field, class="text-slate m-2 px-2 rounded-md") }}
+                {{ form.rho_min.label | safe}}
+                {{ with_errors(form.rho_min, class="text-slate m-2 px-2 rounded-md") }}
+                {{ form.rho_max.label | safe }}
+                {{ with_errors(form.rho_max, class="text-slate m-2 px-2 rounded-md") }}
             </fieldset>
-            <fieldset class="border-neutral border-2 grid grid-cols-6 mb-2">
+            <fieldset class="border-neutral border-2 items-center justify-items-center grid grid-cols-6 mb-2">
                 <legend class="font-bold">Plot Tags</legend>
-                <label class="m-2" for="exButton">Show Excitation (MeV)</label>
-                {% if request.form["plotType"] == "E" %}
-                    <input class="accent-gold m-2" type="radio" name="plotType" id="exButton" value="E" checked="checked">
-                {% else %}
-                    <input class="accent-gold m-2" type="radio" name="plotType" id="exButton" value="E">
-                {% endif %}
-                <label class="m-2" for="keButton">Show Ejectile KE (MeV)</label>
-                {% if request.form["plotType"] == "K" %}
-                    <input class="accent-gold m-2" type="radio" name="plotType" id="keButton" value="K" checked="checked">
-                {% else %}
-                    <input class="accent-gold m-2" type="radio" name="plotType" id="keButton" value="K">
-                {% endif %}
-                <label class="m-2" for="zButton">Show ZOffset (cm)</label>
-                {% if request.form["plotType"] == "Z" %}
-                    <input class="accent-gold m-2" type="radio" name="plotType" id="zButton" value="Z" checked="checked">
-                {% else %}
-                    <input class="accent-gold m-2" type="radio" class="button-garnet" name="plotType" id="zButton" value="Z">
-                {% endif %}
-            </fieldset>
+                {% for field in form.buttons %}
+                    {{ field.label(class_="m-2") }}
+                    {{ with_errors(field, class="accent-gold") }}
+                {% endfor %}
+            </fieldset> 
             <input class="bg-gold text-garnet self-center justify-center font-bold text-2xl rounded-md shadow-md hover:bg-light-gold hover:text-light-garnet m-4 p-2" type="submit" value="Plot">
         </form>
     </div>

@@ -3,7 +3,22 @@
 {% block content %}
     <h1 class="font-bold text-gold text-2xl mb-2">Add Reaction</h1>
     <form class="bg-gold grid grid-cols-[fit-content] items-center justify-items-center rounded-md text-xl font-bold" method="post">
-        <label class="w-fit m-2" for="mat_id">Target Material</label>
+        {{ form.csrf_token }}
+        {{ form.target_mat.label(class_="w-fit m-2") }}
+        {{ with_errors(form.target_mat, class="p-2 m-1 rounded-md w-full") }}
+        {{ form.zt.label }}
+        {{ with_errors(form.zt, class="p-2 m-1 rounded-md") }}
+        {{ form.at.label }}
+        {{ with_errors(form.at, class="p-2 m-1 rounded-md") }}
+        {{ form.zp.label }}
+        {{ with_errors(form.zp, class="p-2 m-1 rounded-md") }}
+        {{ form.ap.label }}
+        {{ with_errors(form.ap, class="p-2 m-1 rounded-md") }}
+        {{ form.ze.label }}
+        {{ with_errors(form.ze, class="p-2 m-1 rounded-md") }}
+        {{ form.ae.label }}
+        {{ with_errors(form.ae, class="p-2 m-1 rounded-md") }}
+        <!-- <label class="w-fit m-2" for="mat_id">Target Material</label>
         <select class="p-2 m-1 rounded-md" name="mat_id" id="mat_id" required>
             {% for mat in target_mats %}
                 <option value="{{ mat.id }}">{{ mat.mat_name }}</option>
@@ -20,7 +35,7 @@
         <label for="ze">ZE</label>
         <input class="p-2 m-1 rounded-md px-2" type="number" name="ze" value="{{ request.form['ze'] }}" required>
         <label for="ae">AE</label>
-        <input class="p-2 m-1 rounded-md px-2" type="number" name="ae" value="{{ request.form['ae'] }}" required>
+        <input class="p-2 m-1 rounded-md px-2" type="number" name="ae" value="{{ request.form['ae'] }}" required> -->
         <input class="bg-garnet text-gold rounded-md hover:bg-light-garnet hover:text-light-gold shadow-md self-center col-span-2 p-2 m-2" type="submit" value="Save">
     </form>
 {% endblock %}

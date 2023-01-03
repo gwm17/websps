@@ -7,6 +7,18 @@
     <link rel="stylesheet" href="{{url_for('static',filename='dist/output.css')}}">
 </head>
 
+{% macro with_errors(field) %}
+    <div class="flex flex-col">
+    {% if field.errors %}
+        {% set css_class = 'outline-red ' + kwargs.pop('class', '') %}
+        {{ field(class=css_class, **kwargs) }}
+        <ul class="text-xl text-light-garnet flex items-center m-1">{% for error in field.errors %}<li>{{ error | e }}</li>{% endfor %}</ul>
+    {% else %}
+        {{ field(**kwargs) }}
+    {% endif %}
+    </div>
+{% endmacro %}
+
 <body class="text-gold bg-slate w-full">
     <nav class="bg-garnet flex items-center justify-between m-1 rounded-md">
         <h1 class="text-gold text-5xl font-bold p-2">WebSPS</h1>
