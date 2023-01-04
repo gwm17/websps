@@ -31,7 +31,17 @@ class TargetMaterial(db.Model):
     mat_symbol: str = Column(String, nullable=False)
     compounds: str = Column(String, nullable=False)
     thicknesses: str = Column(String, nullable=False)
-    reactions = relationship("ReactionData", back_populates="target_material", cascade="delete")
+    reactions = relationship("ReactionData", back_populates="target_material", cascade="save-update, merge, delete")
+
+class Level(db.Model):
+    __tablename__ = "level"
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    user_id: int = Column(Integer, ForeignKey("user.id"))
+    reaction_id: int = Column(Integer, ForeignKey("reaction.id"))
+    excitation: float = Column(Float)
+
+    reaction = relationship("ReactionData", back_populates="user_levels")
 
 class ReactionData(db.Model):
     __tablename__ = "reaction"
@@ -44,13 +54,14 @@ class ReactionData(db.Model):
     projectile_nuc_id: int = Column(Integer, ForeignKey("nucleus.id"))
     ejectile_nuc_id: int = Column(Integer, ForeignKey("nucleus.id"))
     residual_nuc_id: int = Column(Integer, ForeignKey("nucleus.id"))
-    excitations: str = Column(String)
+    nndc_levels: str = Column(String)
 
     target_material: TargetMaterial = relationship("TargetMaterial", back_populates="reactions")
     target_nucleus: Nucleus = relationship("Nucleus", foreign_keys=[target_nuc_id])
     projectile_nucleus: Nucleus = relationship("Nucleus", foreign_keys=[projectile_nuc_id])
     ejectile_nucleus: Nucleus = relationship("Nucleus", foreign_keys=[ejectile_nuc_id])
     residual_nucleus: Nucleus = relationship("Nucleus", foreign_keys=[residual_nuc_id])
+    user_levels: list[Level] = relationship("Level", back_populates="reaction", cascade="save-update, merge, delete")
 
 class User(db.Model):
     __tablename__ = "user"
@@ -60,6 +71,7 @@ class User(db.Model):
 
     target_materials: list[TargetMaterial] = relationship("TargetMaterial")
     reactions: list[ReactionData] = relationship("ReactionData")
+    levels: list[Level] = relationship("Level")
 
 def get_nucleus_id(z: np.uint32, a: np.uint32) -> np.uint32:
     return z*z + z + a if z > a else a*a + z
@@ -75,6 +87,7 @@ def init_db() -> None:
             entries = line.split()
             nuc.z = int(entries[1])
             nuc.a = int(entries[2])
+            nuc.id = get_nucleus_id(nuc.z, nuc.a)
             nuc.mass = (float(entries[4])  + 1.0e-6 * float(entries[5]) - float(nuc.z) * ELECTRON_MASS) * U2MEV
             nuc.element = entries[3].decode("utf-8")
             nuc.isotope = f"<sup>{nuc.a}</sup>{nuc.element}"

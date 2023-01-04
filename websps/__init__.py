@@ -30,6 +30,7 @@ def create_app(test_config: Optional[Mapping[str, Any]]=None) -> Flask:
         pass
 
     # initialize database with app
+    db.init_app(app)
     db.db.init_app(app)
 
     app.register_blueprint(home.bp)

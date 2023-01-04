@@ -36,3 +36,7 @@ class PlotForm(FlaskForm):
     rho_min = DecimalField(Markup("&rho; Min (cm)"), validators=[InputRequired()])
     rho_max = DecimalField(Markup("&rho; Max (cm)"), validators=[InputRequired()])
     buttons = RadioField(choices=[("E", "Show Excitation (MeV)"), ("K", "Show Ejectile KE (MeV)"), ("Z", "Show Z-Offset (cm)")], validators=[InputRequired()])
+
+class LevelForm(FlaskForm):
+    rxn_id = SelectField("Reaction", coerce=int, validators=[InputRequired()])
+    excitation = DecimalField("Excitation", validators=[InputRequired()])

@@ -6,13 +6,14 @@
     <ul class="flex flex-row items-center justify-center bg-light-slate text-garnet font-bold rounded-md p-2 w-full">
         <li class="bg-gold rounded-md shadow-md m-2 p-2 hover:text-light-garnet hover:bg-light-gold"><a class="action" href="{{ url_for('spsplot.add_target_material') }}">Add Target Material</a></li>
         <li class="bg-gold rounded-md shadow-md m-2 p-2 hover:text-light-garnet hover:bg-light-gold"><a class="action" href="{{ url_for('spsplot.add_rxn') }}">Add Reaction</a></li>
+        <li class="bg-gold rounded-md shadow-md m-2 p-2 hover:text-light-garnet hover:bg-light-gold"><a class="action" href="{{ url_for('spsplot.add_level') }}">Add Level</a></li>
     </ul>
 
     <h1 class="self-center text-4xl font-bold m-2 underline text-gold">Settings</h1>
     <div class="self-center grid grid-cols-1 justify-items-center items-center p-2 bg-garnet w-fit rounded-md m-4 text-gold">
         <div class="bg-garnet w-fit rounded-md flex text-2xl m-4">
-            <table class="table-auto border-collapse text-xl border-neutral border-4  mr-4" name="targ_table" id="targ_table">
-                <caption class="font-bold text-2xl mb-2">Target Materials</caption>
+            <table class="table-auto border-collapse border-neutral border-4  mr-4" name="targ_table" id="targ_table">
+                <caption class="font-bold mb-2">Target Materials</caption>
                 <tr>
                     <th class="border-neutral text-xl border-2 p-2">Name</th>
                     <th class="border-neutral text-xl border-2 p-2">Layer Symbols</th>
@@ -29,13 +30,30 @@
             <table class="table-auto border-collapse border-neutral border-4 m-2" name="rxn_table" id="rxn_table">
                 <caption class="font-bold mb-2">Reactions</caption>
                 <tr>
-                    <th class="border-neutral border-2 p-2">Reaction</th>
+                    <th class="border-neutral border-2 p-2">Reaction ID</th>
+                    <th class="border-neutral border-2 p-2">Reaction Eqn.</th>
                     <th class="border-neutral border-2 p-2">Target Material</th>
                 </tr>
             {% for rxn in reactions %}
                 <tr>
-                    <td class="border-neutral border-2 p-2 hover:text-light-gold"><a class="action" href="{{ url_for('spsplot.update_rxn', id=rxn['id']) }}">{{ rxn.rxn_symbol | safe }}</a></td>
+                    <td class="border-neutral border-2 p-2 hover:text-light-gold"><a class="action" href="{{ url_for('spsplot.update_rxn', id=rxn['id']) }}">{{ rxn.id }}</a></td>
+                    <td class="border-neutral border-2 p-2">{{ rxn.rxn_symbol | safe }}</td>
                     <td class="border-neutral border-2 p-2">{{ rxn.target_material.mat_name }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+            <table class="table-auto border-collapse border-neutral border-4 m-2" name="level_table" id="level_table">
+                <caption class="font-bold mb-2">Levels</caption>
+                <tr>
+                    <th class="border-neutral border-2 p-2">Level ID</th>
+                    <th class="border-neutral border-2 p-2">Excitation (MeV)</th>
+                    <th class="border-neutral border-2 p-2">Reaction ID</th>
+                </tr>
+            {% for level in levels %}
+                <tr>
+                    <td class="border-neutral border-2 p-2 hover:text-light-gold"><a class="action" href="{{ url_for('spsplot.update_level', id=level['id']) }}">{{ level.id }}</a></td>
+                    <td class="border-neutral border-2 p-2">{{ level.excitation }}</td>
+                    <td class="border-neutral border-2 p-2">{{ level.reaction_id }}</td>
                 </tr>
             {% endfor %}
             </table>

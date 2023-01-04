@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 class="font-bold text-gold text-2xl mb-2">Add Level to a Reaction</h1>
+    <form class="bg-gold grid grid-cols-[fit-content] items-center justify-items-center rounded-md text-xl font-bold" method="post">
+        {{ form.csrf_token }}
+        {{ form.rxn_id.label(class_="w-fit m-2") }}
+        {{ with_errors(form.rxn_id, class="p-2 m-1 rounded-md w-full") | safe }}
+        {{ form.excitation.label }}
+        {{ with_errors(form.excitation, class="p-2 m-1 rounded-md") }}
+        <input class="bg-garnet text-gold rounded-md hover:bg-light-garnet hover:text-light-gold shadow-md self-center col-span-2 p-2 m-2" type="submit" value="Save">
+    </form>
+{% endblock %}

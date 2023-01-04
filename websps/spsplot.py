@@ -1,4 +1,4 @@
-from flask import g, Blueprint, flash, redirect, render_template, url_for, Response, request
+from flask import g, Blueprint, flash, redirect, render_template, url_for, Response, request, Markup
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from werkzeug.exceptions import abort
@@ -11,11 +11,11 @@ import base64
 from decimal import Decimal
 
 from .auth import login_required
-from .db import db, get_nucleus_id, User, Nucleus, ReactionData, TargetMaterial
+from .db import db, get_nucleus_id, User, Nucleus, ReactionData, TargetMaterial, Level
 from .NucleusData import get_excitations
 from .SPSReaction import Reaction, RxnParameters
 from .SPSTarget import SPSTarget, TargetLayer
-from .forms import PlotForm, ReactionForm, TargetForm
+from .forms import PlotForm, ReactionForm, TargetForm, LevelForm
 
 PLOT_EX: str = "E"
 PLOT_KE: str = "K"
@@ -42,7 +42,9 @@ def generate_plot(beamEnergy: float, spsAngle: float, magneticField: float, rhoM
             RxnParameters(rxn.target_nuc_id, rxn.projectile_nuc_id, rxn.ejectile_nuc_id, rxn.residual_nuc_id, beamEnergy, magneticField, spsAngle), 
             targetMat
         )
-        excitations = json.loads(rxn.excitations)
+        nndc_excitations = json.loads(rxn.nndc_levels)
+        user_excitations = [level.excitation for level in rxn.user_levels]
+        excitations = nndc_excitations + user_excitations
         for ex in excitations:
             ke = reaction.calculate_ejectile_KE(ex)
             rho = reaction.convert_ejectile_KE_2_rho(ke)
@@ -85,10 +87,10 @@ def index() -> str:
     form = PlotForm()
 
     if form.validate_on_submit():
-        return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, form=form,
+        return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, levels=user.levels, form=form,
             plot = generate_plot(float(form.beam_energy.data), float(form.sps_angle.data), float(form.b_field.data), float(form.rho_min.data), float(form.rho_max.data), form.buttons.data)
         )
-    return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, form=form, plot=None)
+    return render_template("spsplot/index.html", reactions=user.reactions, target_mats=user.target_materials, levels=user.levels, form=form, plot=None)
 
 @bp.route("/target/add", methods=("GET", "POST"))
 @login_required
@@ -106,7 +108,9 @@ def add_target_material() -> Union[str, Response]:
                 symbol = ""
                 for element in layer.elements:
                     if element.z.data is not None and element.a.data is not None and element.s.data is not None:
+                        print(element.z.data, element.a.data)
                         nuc_id = get_nucleus_id(element.z.data, element.a.data)
+                        print(nuc_id)
                         nuc: Nucleus = db.session.get(Nucleus, nuc_id)
                         symbol += f"{nuc.isotope}<sub>{element.s.data}</sub>"
                         layer_data[i].append((nuc_id, element.s.data))
@@ -204,7 +208,7 @@ def delete_target_material(id: int) -> Response:
 def add_rxn() -> Union[str, Response]:
     form = ReactionForm()
     user: User = db.session.get(User, g.user.id)
-    form.target_mat.choices = [(mat.id, mat.mat_name) for mat in user.target_materials]
+    form.target_mat.choices = [(mat.id, Markup(mat.mat_name)) for mat in user.target_materials]
 
     if form.validate_on_submit():
         error = None
@@ -236,7 +240,7 @@ def add_rxn() -> Union[str, Response]:
                                ")$^{" + str(resid.a) + "}$" + resid.element
                 excitations = json.dumps(get_excitations(resid_id))
                 db.session.add(ReactionData(user_id=g.user.id, target_mat_id=form.target_mat.data, rxn_symbol=rxn_symbol, latex_rxn_symbol=latex_symbol,
-                                            target_nuc_id=targ_id, projectile_nuc_id=proj_id, ejectile_nuc_id=eject_id, residual_nuc_id=resid_id, excitations=excitations))
+                                            target_nuc_id=targ_id, projectile_nuc_id=proj_id, ejectile_nuc_id=eject_id, residual_nuc_id=resid_id, nndc_levels=excitations))
                 db.session.commit()
                 return redirect(url_for("spsplot.index"))
     return render_template("spsplot/add_rxn.html", form=form)
@@ -301,7 +305,7 @@ def update_rxn(id: int) -> Union[str, Response]:
                 rxn.projectile_nuc_id = proj_id
                 rxn.ejectile_nuc_id = eject_id
                 rxn.residual_nuc_id = resid_id
-                rxn.excitations = json.dumps(get_excitations(resid_id))
+                rxn.nndc_levels = json.dumps(get_excitations(resid_id))
                 db.session.commit()
                 return redirect(url_for("spsplot.index"))
     return render_template("spsplot/update_rxn.html", rxn=rxn, form=form)
@@ -311,5 +315,72 @@ def update_rxn(id: int) -> Union[str, Response]:
 def delete_rxn(id: int) -> Response:
     rxn = get_rxn(id)
     db.session.delete(rxn)
+    db.session.commit()
+    return redirect(url_for("spsplot.index"))
+
+@bp.route("/level/add", methods=["GET", "POST"])
+@login_required
+def add_level() -> Union[str, Response]:
+    form = LevelForm()
+    user: User = db.session.get(User, g.user.id)
+    form.rxn_id.choices = [(rxn.id, Markup(rxn.rxn_symbol))  for rxn in user.reactions]
+
+    if form.validate_on_submit():
+        error = None
+
+        ex = float(form.excitation.data)
+        if ex < 0.0:
+            error = "Excitation was less than 0"
+
+        if error is not None:
+            flash(error)
+        else:
+            db.session.add(Level(user_id=user.id, reaction_id=form.rxn_id.data, excitation=ex))
+            db.session.commit()
+            return redirect(url_for("spsplot.index"))
+    return render_template("spsplot/add_level.html", form=form)
+
+def get_level(id: int, check_user=True) -> Level:
+    level: Optional[Level] = db.session.get(Level, id)
+
+    if level is None:
+        abort(404, f"Requested level {id} does not exist")
+    if check_user and level.user_id != g.user.id:
+        abort(403)
+    return level
+
+@bp.route("/level/<int:id>/update", methods=["GET", "POST"])
+@login_required
+def update_level(id: int) -> Union[str, Response]:
+    level = get_level(id)
+    form = LevelForm()
+    user: User = db.session.get(User, g.user.id)
+    form.rxn_id.choices = [(rxn.id, Markup(rxn.rxn_symbol))  for rxn in user.reactions]
+
+    if request.method == "GET":
+        form.rxn_id.data = level.reaction_id
+        form.excitation.data = Decimal(level.excitation)
+
+    if form.validate_on_submit():
+        error = None
+
+        ex = float(form.excitation.data)
+        if ex < 0.0:
+            error = "Excitation was less than 0"
+
+        if error is not None:
+            flash(error)
+        else:
+            level.reaction_id = form.rxn_id.data
+            level.excitation = ex
+            db.session.commit()
+            return redirect(url_for("spsplot.index"))
+    return render_template("spsplot/update_level.html", level=level, form=form)
+
+@bp.route("/level/<int:id>/delete", methods=["GET", "POST"])
+@login_required
+def delete_level(id: int) -> Response:
+    level = get_level(id)
+    db.session.delete(level)
     db.session.commit()
     return redirect(url_for("spsplot.index"))
