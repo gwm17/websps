@@ -1,13 +1,11 @@
-import sqlite3
 import click
-from flask import current_app, g, Flask
+from flask import current_app, Flask
 import numpy as np
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine, Column, Integer, String, Float, Time, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
-from pathlib import Path
-from typing import Optional
+from datetime import datetime
 
 U2MEV: float = 931.4940954
 ELECTRON_MASS: float = 0.000548579909
@@ -68,6 +66,8 @@ class User(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, nullable=False)
     password = Column(String, nullable=False)
+    date_created = Column(DateTime, nullable=False)
+    date_last_login = Column(DateTime, nullable=False)
 
     target_materials: list[TargetMaterial] = relationship("TargetMaterial")
     reactions: list[ReactionData] = relationship("ReactionData")
@@ -79,7 +79,7 @@ def get_nucleus_id(z: np.uint32, a: np.uint32) -> np.uint32:
 def init_db() -> None:
     db.drop_all()
     db.create_all()
-    admin = User(username=current_app.config.get("ADMIN_USERNAME"), password=generate_password_hash(current_app.config.get("ADMIN_PASSWORD")))
+    admin = User(username=current_app.config.get("ADMIN_USERNAME"), password=generate_password_hash(current_app.config.get("ADMIN_PASSWORD")), date_created=datetime.now(), date_last_login=datetime.now())
     db.session.add(admin)
     db.session.commit()
     with current_app.open_resource("data/mass.txt") as massfile:

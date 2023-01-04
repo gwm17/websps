@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from typing import Optional, Union, Callable
+from datetime import datetime
 
 from .db import db, User
 from .forms import LoginForm
@@ -17,7 +18,7 @@ def register() -> Union[str, Response]:
     form = LoginForm()
     error = None
     if form.validate_on_submit():
-        user = User(username=form.username.data, password=generate_password_hash(form.password.data))
+        user = User(username=form.username.data, password=generate_password_hash(form.password.data), date_created=datetime.now(), date_last_login=datetime.now())
         try:
             db.session.add(user)
             db.session.commit()
@@ -44,6 +45,8 @@ def login() -> Union[str, Response]:
         if error is None:
             session.clear()
             session["user_id"] = user.id
+            user.date_last_login = datetime.now()
+            db.session.commit()
             return redirect(url_for("home.index"))
         
         flash(error)

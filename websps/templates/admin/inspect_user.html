@@ -3,6 +3,8 @@
 {% block content %}
 
     <h1 class="self-center text-4xl font-bold m-2 underline text-gold">User: {{ user.username }}</h1>
+    <h1 class="self-center text-4xl font-bold m-2 underline text-gold">Date Account Created: {{ user.date_created }}</h1>
+    <h1 class="self-center text-4xl font-bold m-2 underline text-gold">Date of Last Login: {{ user.date_last_login }}</h1>
     <div class="bg-garnet text-gold w-fit rounded-md flex text-2xl p-2 m-4">
         <table class="table-auto border-collapse border-neutral border-4  mr-4" name="targ_table" id="targ_table">
             <caption class="font-bold mb-2">Target Materials</caption>
