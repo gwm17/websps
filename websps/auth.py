@@ -1,5 +1,5 @@
 import functools
-from flask import g, Blueprint, flash, redirect, render_template, request, session, url_for, Response
+from flask import g, Blueprint, flash, redirect, render_template, request, session, url_for, Response, current_app
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
@@ -28,30 +28,6 @@ def register() -> Union[str, Response]:
         else:
             return redirect(url_for("auth.login"))
 
-    # if request.method == "POST":
-    #     user = User(
-    #         username = request.form["username"],
-    #         password = request.form["password"]
-    #     )
-    #     error: Optional[str] = None
-
-    #     if not user.username:
-    #         error = "Username is required"
-    #     elif not user.password:
-    #         error = "Password is required"
-
-    #     if error is None:
-    #         try:
-    #             db.session.add(user)
-    #             db.session.commit()
-    #         except IntegrityError:
-    #             error = f"Username {user.username} already exists"
-    #             db.session.rollback()
-    #         else:
-    #             return redirect(url_for("auth.login"))
-
-    #     flash(error)
-
     return render_template("auth/register.html", form=form)
 
 @bp.route("/login", methods=("GET", "POST"))
@@ -72,26 +48,6 @@ def login() -> Union[str, Response]:
         
         flash(error)
     return render_template("auth/login.html", form=form)
-    # if request.method == "POST":
-    #     username = request.form["username"]
-    #     password = request.form["password"]
-    #     error: Optional[str] = None
-
-    #     user: User = db.session.execute(select(User).filter_by(username=username)).scalar_one_or_none()
-
-    #     if user is None:
-    #         error = "Incorrect username"
-    #     elif not check_password_hash(user.password, password):
-    #         error = "Incorrect password"
-        
-    #     if error is None:
-    #         session.clear()
-    #         session["user_id"] = user.id
-    #         return redirect(url_for("home.index"))
-
-    #     flash(error)
-
-    # return render_template("auth/login.html")
 
 #Load user data based on login to g
 @bp.before_app_request
@@ -116,4 +72,20 @@ def login_required(view: Callable):
 
         return view(**kwargs)
     
+    return wrapped_view
+
+def is_current_user_is_admin() -> bool:
+    if g.user is not None and g.user.username == current_app.config.get("ADMIN_USERNAME"):
+        return True
+    else:
+        return False
+
+#function decorator which enforces admin login
+def admin_required(view: Callable):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user.username != current_app.config.get("ADMIN_USERNAME"):
+            flash("In order to access this information you must be logged in as admin!")
+            return redirect(url_for("auth.login"))
+        return view(**kwargs)
     return wrapped_view

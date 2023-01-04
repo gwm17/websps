@@ -1,11 +1,11 @@
 import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from typing import Mapping, Any, Optional
 from . import db
 from . import auth
 from . import home
 from . import spsplot
+from . import admin
 from pathlib import Path
 
 def create_app(test_config: Optional[Mapping[str, Any]]=None) -> Flask:
@@ -14,6 +14,8 @@ def create_app(test_config: Optional[Mapping[str, Any]]=None) -> Flask:
     app.config.from_mapping(
         SECRET_KEY='dev',
         SQLALCHEMY_DATABASE_URI=f"sqlite+pysqlite:///{Path(app.instance_path) / 'websps.sqlite'}",
+        ADMIN_USERNAME="admin",
+        ADMIN_PASSWORD="test"
     )
 
     if test_config is None:
@@ -33,6 +35,7 @@ def create_app(test_config: Optional[Mapping[str, Any]]=None) -> Flask:
     db.init_app(app)
     db.db.init_app(app)
 
+    app.register_blueprint(admin.bp)
     app.register_blueprint(home.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(spsplot.bp)

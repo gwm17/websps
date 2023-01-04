@@ -5,12 +5,12 @@ import numpy as np
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, Column, Integer, String, Float, Time, ForeignKey
 from sqlalchemy.orm import relationship
+from werkzeug.security import generate_password_hash
 from pathlib import Path
 from typing import Optional
 
 U2MEV: float = 931.4940954
 ELECTRON_MASS: float = 0.000548579909
-DATABASE_NAME = "sqlite+pysqlite:///" + str(Path(__file__) / ".." / "instance" / "websps.sqlite")
 
 db = SQLAlchemy()
 
@@ -79,6 +79,9 @@ def get_nucleus_id(z: np.uint32, a: np.uint32) -> np.uint32:
 def init_db() -> None:
     db.drop_all()
     db.create_all()
+    admin = User(username=current_app.config.get("ADMIN_USERNAME"), password=generate_password_hash(current_app.config.get("ADMIN_PASSWORD")))
+    db.session.add(admin)
+    db.session.commit()
     with current_app.open_resource("data/mass.txt") as massfile:
         massfile.readline()
         massfile.readline()

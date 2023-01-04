@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1 class="self-center text-4xl font-bold m-2 underline text-gold">Registered Users</h1>
+    <div class="bg-garnet w-fit rounded-md flex text-2xl text-gold p-2 m-4">
+        <table class="table-auto border-collapse border-neutral border-4  mr-4">
+            <tr>
+                <th class="border-neutral border-2 p-2">Username</th>
+                <th class="border-neutral border-2 p-2">ID</th>
+                <th class="border-neutral border-2 p-2"># of Materials</th>
+                <th class="border-neutral border-2 p-2"># of Reactions</th>
+                <th class="border-neutral border-2 p-2"># of Levels</th>
+            </tr>
+            {% for user in users %}
+                <tr>
+                    <td class="border-neutral border-2 p-2 hover:text-light-gold"><a class="action" href="{{ url_for('admin.inspect_user', id=user.id) }}">{{ user.username }}</a></td>
+                    <td class="border-neutral border-2 p-2">{{ user.id }}</td>
+                    <td class="border-neutral border-2 p-2">{{ user.target_materials | length}}</td>
+                    <td class="border-neutral border-2 p-2">{{ user.reactions | length }}</td>
+                    <td class="border-neutral border-2 p-2">{{ user.levels | length }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        
+    </div>
+
+{% endblock %}
