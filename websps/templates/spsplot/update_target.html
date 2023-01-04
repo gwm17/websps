@@ -9,6 +9,7 @@
             {{ with_errors(form.mat_name, class="p-2 m-2 rounded-md") }}
         </div>
         {% for layer in form.layers %}
+            {{ layer.csrf_token }}
             <h1>Layer {{ loop.index }}</h1>
             <div class="flex flex-col items-center justify-center">
                 <div class="flex flex-row items-center justify-center">
@@ -16,6 +17,7 @@
                     {{ with_errors(layer.thickness, class="p-2 m-2 rounded-md") }}
                 </div>
                 {% for element in layer.elements %}
+                    {{ element.csrf_token }}
                     <div class="flex flex-row items-center justify-center">
                         {{ element.z.label(class_="p-2 m-2") }}
                         {{ with_errors(element.z, class="p-2 m-2 rounded-md") }}

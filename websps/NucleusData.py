@@ -29,7 +29,6 @@ def get_excitations(id: np.uint32) -> list[float]:
     levels = []
     text = ''
     symbol = get_nuclear_data(id).isotopicSymbol.replace("<sup>", '').replace("</sup>", '')
-    print(symbol)
     site = req.get(f"https://www.nndc.bnl.gov/nudat2/getdatasetClassic.jsp?nucleus={symbol}&unc=nds")
     contents = xhtml.fromstring(site.content)
     tables = contents.xpath("//table")

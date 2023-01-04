@@ -1,6 +1,6 @@
-from flask import g, Blueprint, flash, redirect, render_template, request, url_for, Response
+from flask import g, Blueprint, flash, redirect, render_template, url_for, Response, request
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy.orm import joinedload
 from werkzeug.exceptions import abort
 
 from typing import Union, Any, Optional
@@ -8,6 +8,7 @@ import json
 from matplotlib.figure import Figure
 from io import BytesIO
 import base64
+from decimal import Decimal
 
 from .auth import login_required
 from .db import db, get_nucleus_id, User, Nucleus, ReactionData, TargetMaterial
@@ -139,6 +140,20 @@ def get_target_material(id: int, check_user: bool = True) -> TargetMaterial:
 def update_target_material(id: int) -> Union[str, Response]:
     mat = get_target_material(id)
     form = TargetForm()
+
+    #Load up existing target data and put it in the form
+    if request.method == "GET":
+        form.mat_name.data = mat.mat_name
+        load_thick = json.loads(mat.thicknesses)
+        load_layers = json.loads(mat.compounds)
+        for i, t in enumerate(load_thick):
+            form.layers.entries[i].thickness.data = Decimal(t)
+            for j, comp in enumerate(load_layers[i]):
+                nuc: Nucleus = db.session.get(Nucleus, comp[0])
+                form.layers.entries[i].elements[j].z.data = nuc.z
+                form.layers.entries[i].elements[j].a.data = nuc.a
+                form.layers.entries[i].elements[j].s.data = comp[1]
+
     if form.validate_on_submit():
         layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
         thicknesses: list[float] = [] #thickness of all layers
@@ -147,7 +162,7 @@ def update_target_material(id: int) -> Union[str, Response]:
 
         for i, layer in enumerate(form.layers):
             if layer.thickness.data is not None:
-                thicknesses.append(layer.thickness.data)
+                thicknesses.append(float(layer.thickness.data))
                 symbol = ""
                 for element in layer.elements:
                     if element.z.data is not None and element.a.data is not None and element.s.data is not None:
@@ -157,7 +172,7 @@ def update_target_material(id: int) -> Union[str, Response]:
                             error = f"Illegal nucleus Z={element.z.data} A={element.a.data}"
                         else:
                             symbol += f"{nuc.isotope}<sub>{element.s.data}</sub>"
-                            layer_data[i].append(nuc_id, element.s.data)
+                            layer_data[i].append((nuc_id, element.s.data))
                 if symbol != "":
                     symbols.append(symbol)
 
@@ -167,7 +182,10 @@ def update_target_material(id: int) -> Union[str, Response]:
         if error is not None:
             flash(error)
         else:
-            db.session.add(TargetMaterial(user_id=g.user.id, mat_name=form.mat_name.data, mat_symbol=json.dumps(symbols), compounds=json.dumps(layer_data), thicknesses=json.dumps(thicknesses)))
+            mat.mat_name = form.mat_name.data
+            mat.mat_symbol = json.dumps(symbols)
+            mat.compounds = json.dumps(layer_data)
+            mat.thicknesses = json.dumps(thicknesses)
             db.session.commit()
             return redirect(url_for("spsplot.index"))
     
@@ -235,9 +253,58 @@ def get_rxn(id: int, check_user: bool = True) -> ReactionData:
 
 @bp.route("/rxn/<int:id>/update", methods=("GET", "POST"))
 @login_required
-def update_rxn(id: int) -> str:
+def update_rxn(id: int) -> Union[str, Response]:
     rxn = get_rxn(id)
-    return render_template("spsplot/update_rxn.html", rxn=rxn)
+    form = ReactionForm()
+    user: User = db.session.get(User, g.user.id)
+    form.target_mat.choices = [(mat.id, mat.mat_name) for mat in user.target_materials]
+
+    if request.method == "GET":
+        form.target_mat.data = rxn.target_mat_id
+        form.zt.data = rxn.target_nucleus.z
+        form.at.data = rxn.target_nucleus.a
+        form.zp.data = rxn.projectile_nucleus.z
+        form.ap.data = rxn.projectile_nucleus.a
+        form.ze.data = rxn.ejectile_nucleus.z
+        form.ae.data = rxn.ejectile_nucleus.a
+
+    if form.validate_on_submit():
+        error = None
+        zr = form.zt.data + form.zp.data - form.ze.data
+        ar = form.at.data + form.ap.data - form.ae.data
+        if zr < 0 or ar < 1:
+            error = f"Illegal reaction resulting in residual with Z:{zr} A:{ar}"
+        else:
+            targ_id = get_nucleus_id(form.zt.data, form.at.data)
+            proj_id = get_nucleus_id(form.zp.data, form.ap.data)
+            eject_id = get_nucleus_id(form.ze.data, form.ae.data)
+            resid_id = get_nucleus_id(zr, ar)
+
+            targ: Optional[Nucleus] = db.session.get(Nucleus, targ_id)
+            proj: Optional[Nucleus] = db.session.get(Nucleus, proj_id)
+            eject: Optional[Nucleus] = db.session.get(Nucleus, eject_id)
+            resid: Optional[Nucleus] = db.session.get(Nucleus, resid_id)
+
+            if targ is None or proj is None or eject is None or resid is None:
+                error = f"One of the reactants is not a valid nucleus"
+
+            if error is not None:
+                flash(error)
+            else:
+                rxn.target_mat_id = form.target_mat.data
+                rxn.rxn_symbol = f"{targ.isotope}({proj.isotope},{eject.isotope}){resid.isotope}"
+                rxn.latex_rxn_symbol = "$^{" + str(targ.a) + "}$" + targ.element + \
+                                       "($^{" + str(proj.a) + "}$" + proj.element + \
+                                       ",$^{" + str(eject.a) + "}$" + eject.element + \
+                                       ")$^{" + str(resid.a) + "}$" + resid.element
+                rxn.target_nuc_id = targ_id
+                rxn.projectile_nuc_id = proj_id
+                rxn.ejectile_nuc_id = eject_id
+                rxn.residual_nuc_id = resid_id
+                rxn.excitations = json.dumps(get_excitations(resid_id))
+                db.session.commit()
+                return redirect(url_for("spsplot.index"))
+    return render_template("spsplot/update_rxn.html", rxn=rxn, form=form)
 
 @bp.route("/rxn/<int:id>/delete", methods=("GET", "POST"))
 @login_required

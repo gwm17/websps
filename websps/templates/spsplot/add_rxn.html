@@ -18,24 +18,6 @@
         {{ with_errors(form.ze, class="p-2 m-1 rounded-md") }}
         {{ form.ae.label }}
         {{ with_errors(form.ae, class="p-2 m-1 rounded-md") }}
-        <!-- <label class="w-fit m-2" for="mat_id">Target Material</label>
-        <select class="p-2 m-1 rounded-md" name="mat_id" id="mat_id" required>
-            {% for mat in target_mats %}
-                <option value="{{ mat.id }}">{{ mat.mat_name }}</option>
-            {% endfor %}
-        </select>
-        <label for="zt">ZT</label>
-        <input class="p-2 m-1 rounded-md px-2" type="number" name="zt" value="{{ request.form['zt'] }}" required>
-        <label for="at">AT</label>
-        <input class="p-2 m-1 rounded-md px-2" type="number" name="at" value="{{ request.form['at'] }}" required>
-        <label for="zp">ZP</label>
-        <input class="p-2 m-1 rounded-md px-2" type="number" name="zp" value="{{ request.form['zp'] }}" required>
-        <label for="ap">AP</label>
-        <input class="p-2 m-1 rounded-md px-2" type="number" name="ap" value="{{ request.form['ap'] }}" required>
-        <label for="ze">ZE</label>
-        <input class="p-2 m-1 rounded-md px-2" type="number" name="ze" value="{{ request.form['ze'] }}" required>
-        <label for="ae">AE</label>
-        <input class="p-2 m-1 rounded-md px-2" type="number" name="ae" value="{{ request.form['ae'] }}" required> -->
         <input class="bg-garnet text-gold rounded-md hover:bg-light-garnet hover:text-light-gold shadow-md self-center col-span-2 p-2 m-2" type="submit" value="Save">
     </form>
 {% endblock %}
