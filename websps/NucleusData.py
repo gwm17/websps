@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import requests as req
 import lxml.html as xhtml
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 @dataclass
 class NucleusData:
@@ -19,7 +19,7 @@ def get_nuclear_data(id: np.uint32) -> Optional[NucleusData]:
         return None
     return NucleusData(nuc.mass, nuc.element, nuc.isotope, nuc.z, nuc.a)
 
-def construct_catima_layer_element(id: np.uint32, s: int) -> Optional[tuple[float, int, float]]:
+def construct_catima_layer_element(id: np.uint32, s: int) -> Optional[Tuple[float, int, float]]:
     nuc: Optional[Nucleus] = db.session.get(Nucleus, id)
     if nuc is None:
         return None
