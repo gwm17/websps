@@ -2,6 +2,7 @@ from .SPSTarget import SPSTarget
 from .NucleusData import get_nuclear_data
 from dataclasses import dataclass
 from numpy import sqrt, cos, pi, sin
+from typing import List
 
 INVALID_KINETIC_ENERGY: float = -1000.0
 
@@ -87,11 +88,11 @@ class Reaction:
         k /= self.ejectileNuc.mass + self.residualNuc.mass - sqrt(self.projectileNuc.mass * self.ejectileNuc.mass * self.beamEnergy/ejectileEnergy) * cos(self.spsAngle)
         return -1.0*k*ejectileRho*self.FP_DISPERSION*self.FP_MAGNIFICATION
 
-    def calculate_ejectile_energies(self, excitations: list[float]) -> list[float]:
+    def calculate_ejectile_energies(self, excitations: List[float]) -> List[float]:
         return [self.calculate_ejectile_KE(ex) for ex in excitations]
     
-    def calculate_ejectile_rhos(self, ejectEnergies: list[float]) -> list[float]:
+    def calculate_ejectile_rhos(self, ejectEnergies: List[float]) -> List[float]:
         return [self.convert_ejectile_KE_2_rho(ke) for ke in ejectEnergies]
 
-    def calculate_ejectile_offsets(self, ejectEnergies: list[float]) -> list[float]:
+    def calculate_ejectile_offsets(self, ejectEnergies: List[float]) -> List[float]:
         return [self.calculate_focal_plane_offset(ke) for ke in ejectEnergies]

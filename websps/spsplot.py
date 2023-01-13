@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from werkzeug.exceptions import abort
 
-from typing import Union, Any, Optional
+from typing import Union, Optional, List, Tuple
 import json
 from matplotlib.figure import Figure
 from io import BytesIO
@@ -97,9 +97,9 @@ def index() -> str:
 def add_target_material() -> Union[str, Response]:
     form = TargetForm()
     if form.validate_on_submit():
-        layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
-        thicknesses: list[float] = [] #thickness of all layers
-        symbols: list[str] = [] #layer symbols
+        layer_data: List[List[Tuple[int, int]]] = [[], [], []] #list of all layers
+        thicknesses: List[float] = [] #thickness of all layers
+        symbols: List[str] = [] #layer symbols
         error = None
 
         for i, layer in enumerate(form.layers):
@@ -159,9 +159,9 @@ def update_target_material(id: int) -> Union[str, Response]:
                 form.layers.entries[i].elements[j].s.data = comp[1]
 
     if form.validate_on_submit():
-        layer_data: list[list[tuple[int, int]]] = [[], [], []] #list of all layers
-        thicknesses: list[float] = [] #thickness of all layers
-        symbols: list[str] = [] #layer symbols
+        layer_data: List[List[Tuple[int, int]]] = [[], [], []] #list of all layers
+        thicknesses: List[float] = [] #thickness of all layers
+        symbols: List[str] = [] #layer symbols
         error = None
 
         for i, layer in enumerate(form.layers):

@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 from datetime import datetime
+from typing import List
 
 U2MEV: float = 931.4940954
 ELECTRON_MASS: float = 0.000548579909
@@ -59,7 +60,7 @@ class ReactionData(db.Model):
     projectile_nucleus: Nucleus = relationship("Nucleus", foreign_keys=[projectile_nuc_id])
     ejectile_nucleus: Nucleus = relationship("Nucleus", foreign_keys=[ejectile_nuc_id])
     residual_nucleus: Nucleus = relationship("Nucleus", foreign_keys=[residual_nuc_id])
-    user_levels: list[Level] = relationship("Level", back_populates="reaction", cascade="save-update, merge, delete")
+    user_levels: List[Level] = relationship("Level", back_populates="reaction", cascade="save-update, merge, delete")
 
 class User(db.Model):
     __tablename__ = "user"
@@ -69,9 +70,9 @@ class User(db.Model):
     date_created = Column(DateTime, nullable=False)
     date_last_login = Column(DateTime, nullable=False)
 
-    target_materials: list[TargetMaterial] = relationship("TargetMaterial")
-    reactions: list[ReactionData] = relationship("ReactionData")
-    levels: list[Level] = relationship("Level")
+    target_materials: List[TargetMaterial] = relationship("TargetMaterial")
+    reactions: List[ReactionData] = relationship("ReactionData")
+    levels: List[Level] = relationship("Level")
 
 def get_nucleus_id(z: np.uint32, a: np.uint32) -> np.uint32:
     return z*z + z + a if z > a else a*a + z

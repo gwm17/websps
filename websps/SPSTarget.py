@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from numpy import pi, cos, uint32
 from .NucleusData import construct_catima_layer_element
 from .db import get_nucleus_id
+from typing import List, Tuple
 
 INVALID_RXN_LAYER: int = -1
 ADAPTIVE_DEPTH_MAX: int = 100
@@ -10,7 +11,7 @@ ENERGY_PERCENT_STEP_MIN: float = 0.001
 
 @dataclass
 class TargetLayer:
-    compound_list: list[tuple[uint32 , int]] = field(default_factory=list) #nucleus id, Stoichiometry
+    compound_list: List[Tuple[uint32 , int]] = field(default_factory=list) #nucleus id, Stoichiometry
     thickness: float = 0.0 #ug/cm^2
 
 #integrate energy loss starting from the final energy and running backwards to initial energy
@@ -91,7 +92,7 @@ def get_energyloss(projectile: catima.Projectile, material: catima.Material) -> 
         
 class SPSTarget:
     UG2G: float = 1.0e-6 #convert ug to g
-    def __init__(self, layers: list[TargetLayer], name: str = "default"):
+    def __init__(self, layers: List[TargetLayer], name: str = "default"):
         self.layer_details = layers
         self.name = name
 

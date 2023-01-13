@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import requests as req
 import lxml.html as xhtml
-from typing import Optional
+from typing import Optional, List
 
 @dataclass
 class NucleusData:
@@ -25,7 +25,7 @@ def construct_catima_layer_element(id: np.uint32, s: int) -> Optional[tuple[floa
         return None
     return (nuc.mass, nuc.z, float(s))
 
-def get_excitations(id: np.uint32) -> list[float]:
+def get_excitations(id: np.uint32) -> List[float]:
     levels = []
     text = ''
     symbol = get_nuclear_data(id).isotopicSymbol.replace("<sup>", '').replace("</sup>", '')

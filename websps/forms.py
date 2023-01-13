@@ -1,11 +1,11 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, IntegerField, SelectField, RadioField, FormField, FieldList
+from wtforms import StringField, PasswordField, DecimalField, IntegerField, SelectField, RadioField, FormField, FieldList
 from wtforms.validators import InputRequired, Optional
 from flask import Markup
 
 class LoginForm(FlaskForm):
     username = StringField("Username", validators=[InputRequired()])
-    password = StringField("Password", validators=[InputRequired()])
+    password = PasswordField("Password", validators=[InputRequired()])
 
 class TargetElementForm(FlaskForm):
     z = IntegerField("Z", validators=[Optional()])
