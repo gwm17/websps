@@ -121,7 +121,7 @@ def add_target_material() -> Union[str, Response]:
             error = "A target must have at least one layer"
 
         if error is not None:
-            flash(error)
+            flash(error, 'error')
         else:
             db.session.add(TargetMaterial(user_id=g.user.id, mat_name=form.mat_name.data, mat_symbol=json.dumps(symbols), compounds=json.dumps(layer_data), thicknesses=json.dumps(thicknesses)))
             db.session.commit()
@@ -184,7 +184,7 @@ def update_target_material(id: int) -> Union[str, Response]:
             error = "A target must have at least one layer"
 
         if error is not None:
-            flash(error)
+            flash(error, 'error')
         else:
             mat.mat_name = form.mat_name.data
             mat.mat_symbol = json.dumps(symbols)
@@ -231,7 +231,7 @@ def add_rxn() -> Union[str, Response]:
                 error = f"One of the reactants is not a valid nucleus"
 
             if error is not None:
-                flash(error)
+                flash(error, 'error')
             else:
                 rxn_symbol = f"{targ.isotope}({proj.isotope},{eject.isotope}){resid.isotope}"
                 latex_symbol = "$^{" + str(targ.a) + "}$" + targ.element + \
@@ -293,7 +293,7 @@ def update_rxn(id: int) -> Union[str, Response]:
                 error = f"One of the reactants is not a valid nucleus"
 
             if error is not None:
-                flash(error)
+                flash(error, 'error')
             else:
                 rxn.target_mat_id = form.target_mat.data
                 rxn.rxn_symbol = f"{targ.isotope}({proj.isotope},{eject.isotope}){resid.isotope}"
@@ -333,7 +333,7 @@ def add_level() -> Union[str, Response]:
             error = "Excitation was less than 0"
 
         if error is not None:
-            flash(error)
+            flash(error, 'error')
         else:
             db.session.add(Level(user_id=user.id, reaction_id=form.rxn_id.data, excitation=ex))
             db.session.commit()
@@ -369,7 +369,7 @@ def update_level(id: int) -> Union[str, Response]:
             error = "Excitation was less than 0"
 
         if error is not None:
-            flash(error)
+            flash(error, 'error')
         else:
             level.reaction_id = form.rxn_id.data
             level.excitation = ex

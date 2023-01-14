@@ -7,6 +7,11 @@
         {{ with_errors(form.username, class="outline outline-2 outline-slate mb-2 rounded-md p-2") }}
         {{ form.password.label(class_="text-xl font-bold p-2") }}
         {{ with_errors(form.password, class="outline outline-2 outline-slate mb-4 rounded-md p-2") }}
-        <input class="text-lg font-bold bg-garnet text-gold rounded-md p-1 hover:bg-light-garnet hover:text-light-gold" type="submit" value="Login">
+        <h1 class="text-xl font-bold p-2">Remove the text in this field!</h1>
+        {{ form.bot_type2_field.label(class_="text-xl font-bold p-2 hidden") }}
+        {{ with_errors(form.bot_type2_field, class="outline outline-2 outline-slate mb-4 rounded-md p-2") }}
+        {{ form.bot_type1_field.label(class_="hidden") }}
+        {{ with_errors(form.bot_type1_field, class="outline outline-2 outline-slate mb-4 rounded-md p-2 hidden") }}
+        <input class="text-lg font-bold bg-garnet text-gold rounded-md p-1 hover:bg-light-garnet hover:text-light-gold" type="submit" value="Register">
     </form>
 {% endblock %}

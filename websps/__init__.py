@@ -15,7 +15,7 @@ def create_app(test_config: Optional[Mapping[str, Any]]=None) -> Flask:
         SECRET_KEY='dev',
         SQLALCHEMY_DATABASE_URI=f"sqlite+pysqlite:///{Path(app.instance_path) / 'websps.sqlite'}",
         ADMIN_USERNAME="admin",
-        ADMIN_PASSWORD="test"
+        ADMIN_PASSWORD="testing1"
     )
 
     if test_config is None:

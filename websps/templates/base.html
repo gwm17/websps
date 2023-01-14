@@ -40,12 +40,25 @@
             <a class="text-xl font-bold hover:text-light-gold" href="{{ url_for('spsplot.index') }}">SPSPlot</a>
         </div>
         <div class="basis-11/12 flex flex-col items-center p-2 text-slate">
-            {% for message in get_flashed_messages() %}
-                <div class="flex flex-col bg-gold text-garnet rounded-md m-2 p-2 items-center">
-                    <h1 class="font-bold text-4xl">WARNING</h1>
-                    <p class="text-2xl">{{ message }}</p>
-                </div>
-            {% endfor %}
+            {% with errors = get_flashed_messages(category_filter=["error"]) %}
+                {% if errors %}
+                    {% for message in errors %}
+                        <div class="flex flex-col bg-gold text-garnet rounded-md m-2 p-2 items-center">
+                            <h1 class="font-bold text-4xl">WARNING</h1>
+                            <p class="text-2xl">{{ message }}</p>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}    
+            {% with infos = get_flashed_messages(category_filter=["info"]) %}
+                {% if infos %}
+                    {% for message in infos %}
+                        <div class="flex flex-col bg-gold text-garnet rounded-md m-2 p-2 items-center">
+                            <p class="text-2xl">{{ message }}</p>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </div>
     </div>

@@ -24,9 +24,10 @@ def register() -> Union[str, Response]:
             db.session.commit()
         except IntegrityError:
             error = f"Username {user.username} already exists"
-            flash(error)
+            flash(error, 'error')
             db.session.rollback()
         else:
+            flash("Succesfully registered! Please login", "info")
             return redirect(url_for("auth.login"))
 
     return render_template("auth/register.html", form=form)
@@ -49,7 +50,7 @@ def login() -> Union[str, Response]:
             db.session.commit()
             return redirect(url_for("home.index"))
         
-        flash(error)
+        flash(error, 'error')
     return render_template("auth/login.html", form=form)
 
 #Load user data based on login to g
@@ -88,7 +89,7 @@ def admin_required(view: Callable):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user.username != current_app.config.get("ADMIN_USERNAME"):
-            flash("In order to access this information you must be logged in as admin!")
+            flash("In order to access this information you must be logged in as admin!", 'error')
             return redirect(url_for("auth.login"))
         return view(**kwargs)
     return wrapped_view
