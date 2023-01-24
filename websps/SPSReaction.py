@@ -44,8 +44,10 @@ class Reaction:
         if beamRxnEnergy < threshold:
             return INVALID_KINETIC_ENERGY
         
-        term1 = sqrt(self.projectileNuc.mass * self.ejectileNuc.mass * beamRxnEnergy) / (self.ejectileNuc.mass + self.residualNuc.mass) * cos(self.spsAngle * self.DEG2RAD)
+        term1 = sqrt(self.projectileNuc.mass * self.ejectileNuc.mass * beamRxnEnergy) / (self.ejectileNuc.mass + self.residualNuc.mass) * cos(self.spsAngle)
         term2 = (beamRxnEnergy * (self.residualNuc.mass - self.projectileNuc.mass) + self.residualNuc.mass * rxnQ) / (self.ejectileNuc.mass + self.residualNuc.mass)
+        if (term1**2.0 +term2) < 0:
+            return INVALID_KINETIC_ENERGY
 
         ke1 = term1 + sqrt(term1**2.0 + term2)
         ke2 = term1 + sqrt(term1**2.0 + term2)
