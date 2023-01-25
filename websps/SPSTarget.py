@@ -112,7 +112,7 @@ class SPSTarget:
         if angle == pi*0.5:
             return e_initial
 
-        projectile = catima.Projectile(zp, ap)
+        projectile = catima.Projectile(ap, zp)
         e_current = e_initial/ap
 
         for (idx, layer) in enumerate(self.layer_details):
@@ -133,7 +133,7 @@ class SPSTarget:
         if angle == pi*0.5:
             return e_initial
 
-        projectile = catima.Projectile(zp, ap)
+        projectile = catima.Projectile(ap, zp)
         e_current = e_initial/ap
 
         for (idx, layer) in enumerate(self.layer_details[rxn_layer:], start=rxn_layer):
@@ -152,7 +152,7 @@ class SPSTarget:
         if angle == pi*0.5:
             return 0.0
 
-        projectile = catima.Projectile(zp, ap)
+        projectile = catima.Projectile(ap, zp)
         e_current = e_final/ap
         sublist = self.layer_details[rxn_layer:] #only care about rxn_layer -> exit
         reveresedRxnLayer = len(sublist) -1 #when reversed rxn_layer is the last layer
